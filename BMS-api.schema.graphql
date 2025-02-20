@@ -1,0 +1,31 @@
+type Value {
+    timestamp: String!
+    value: Int!
+}
+
+type Sensor {
+    externalID: String!
+    sourcePath: String!
+    unit: String!
+    type: String!
+    values: [Value!]!
+}
+
+type Room {
+    id: String!
+    sensors: [Sensor!]!
+}
+
+type Floor {
+    id: String!
+    rooms: [Room!]!
+}
+
+type Building {
+    id: String!
+    floors: [Floor!]!
+}
+
+type Query {
+    building(ids: [String!]): [Building!]!
+}
