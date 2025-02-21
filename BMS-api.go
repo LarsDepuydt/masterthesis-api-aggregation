@@ -7,9 +7,9 @@ import (
 	"os"
 	"fmt"
 	"io"
-	"errors"
 	"encoding/json"
 	"strings"
+	"time"
 
 	graphql "github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
@@ -23,16 +23,16 @@ type MetaDataResponse struct {
 	Unit string `json:"unit"`
 }
 
-type TrendDataReponse struct {
+type TrendDataResponse struct {
 	ExternalID int32 `json:"externallogid"`
 	Timestamp string `json:"timestamp"`
-	Value float32 `json:"value"`
+	Value float64 `json:"value"`
 }
 
 // GraphQL Object Resolvers
 type Value struct {
-	Timestamp string
-	Value     int32
+	Timestamp graphql.Time
+	Value     float64
 }
 
 type Sensor struct {
@@ -40,7 +40,6 @@ type Sensor struct {
 	SourcePath string
 	Unit       string
 	Type       string
-	Values     []Value
 }
 
 type Room struct {
@@ -78,14 +77,18 @@ func SendRequest(endpoint string) ([]byte, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch metadata: %v", err)
+		return nil, fmt.Errorf("failed to fetch data: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println(resp)
-		fmt.Println(io.ReadAll(resp.Body))
-		return nil, errors.New("metadata API returned non-200 status")
+	    bodyBytes, err := io.ReadAll(resp.Body)
+	    if err != nil {
+	        return nil, fmt.Errorf("failed to read response body after non-200 status: %v", err)
+	    }
+	    bodyString := string(bodyBytes)  // Convert byte slice to string
+	    log.Printf("API returned non-200 status: %d, response: %s", resp.StatusCode, bodyString)
+	    return nil, fmt.Errorf("API returned non-200 status: %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -201,7 +204,6 @@ func ParseMetaData(metaData []MetaDataResponse, filterIDs *[]string) ([]Building
 			SourcePath: meta.Source,
 			Unit:       meta.Unit,
 			Type:       sensorType,
-			Values:     []Value{}, // Empty values as per request
 		}
 		room.Sensors = append(room.Sensors, sensor)
 	}
@@ -245,6 +247,62 @@ func (r *Resolver) Building(ctx context.Context, args struct{ IDs *[]string }) (
 	return buildings, nil
 }
 
+func convertToTime(input string) (time.Time, error) {
+	t, err := time.Parse("2006-01-02 15:04:05", input)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse timestamp: %v", err)
+	}
+	return t, nil
+}
+
+func (s Sensor) Values(ctx context.Context, args struct {
+	StartTime graphql.Time
+	EndTime   *graphql.Time
+}) ([]Value, error) {
+	log.Println("Fetching values for sensor:", s.ExternalID)
+	log.Println("Start Time:", args.StartTime)
+
+	startTime := args.StartTime.Time
+
+	var endTime time.Time
+	if args.EndTime != nil {
+		endTime = args.EndTime.Time
+	} else {
+		endTime = time.Now().UTC()
+	}
+
+	url := fmt.Sprintf("https://bms-api.build.aau.dk/api/v1/trenddata?externallogid=%s&starttime=%s&endtime=%s",
+		s.ExternalID,
+		startTime.Format(time.RFC3339),
+		endTime.Format(time.RFC3339),
+	)
+	body, err := SendRequest(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch trend data: %v", err)
+	}
+
+	var trendData []TrendDataResponse
+	if err := json.Unmarshal(body, &trendData); err != nil {
+		return nil, fmt.Errorf("failed to parse trend data JSON: %v", err)
+	}
+
+	// Convert timestamps and map to Value struct
+	var values []Value
+	for _, data := range trendData {
+		t, err := time.Parse("2006-01-02 15:04:05", data.Timestamp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert timestamp: %v", err)
+		}
+
+		values = append(values, Value{
+			Timestamp: graphql.Time{Time: t},
+			Value:     data.Value,
+		})
+	}
+
+	return values, nil
+}
+
 func main() {
 	godotenv.Load()
 	// metadataURL := "https://bms-api.build.aau.dk/api/v1/metadata"
@@ -256,7 +314,11 @@ func main() {
 	}
 
 	// Parse schema
-	schema := graphql.MustParseSchema(string(schemaFile), &Resolver{}, graphql.UseFieldResolvers())
+	schema := graphql.MustParseSchema(
+		string(schemaFile),
+		&Resolver{},
+		graphql.UseFieldResolvers(),
+	)
 
 	// Start server
 	http.Handle("/graphql", &relay.Handler{Schema: schema})

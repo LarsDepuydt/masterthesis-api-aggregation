@@ -1,6 +1,8 @@
+scalar Time
+
 type Value {
-    timestamp: String!
-    value: Int!
+    timestamp: Time!
+    value: Float!
 }
 
 type Sensor {
@@ -8,22 +10,22 @@ type Sensor {
     sourcePath: String!
     unit: String!
     type: String!
-    values: [Value!]!
+    values(startTime: Time!, endTime: Time): [Value!]!
 }
 
 type Room {
     id: String!
-    sensors: [Sensor!]!
+    sensors(sensorIDs: [String!]): [Sensor!]! # Add sensorIDs filter
 }
 
 type Floor {
     id: String!
-    rooms: [Room!]!
+    rooms(roomIDs: [String!]): [Room!]! # Add roomIDs filter
 }
 
 type Building {
     id: String!
-    floors: [Floor!]!
+    floors(floorIDs: [String!]): [Floor!]! # Add floorIDs filter
 }
 
 type Query {
