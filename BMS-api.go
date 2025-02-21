@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+	"sync"
 
 	graphql "github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
@@ -18,15 +19,15 @@ import (
 
 // Api response
 type MetaDataResponse struct {
-	ExternalID int32 `json:"externallogid"`
-	Source string `json:"source"`
-	Unit string `json:"unit"`
+	ExternalID int32  `json:"externallogid"`
+	Source     string `json:"source"`
+	Unit       string `json:"unit"`
 }
 
 type TrendDataResponse struct {
-	ExternalID int32 `json:"externallogid"`
-	Timestamp string `json:"timestamp"`
-	Value float64 `json:"value"`
+	ExternalID int32   `json:"externallogid"`
+	Timestamp  string  `json:"timestamp"`
+	Value      float64 `json:"value"`
 }
 
 // GraphQL Object Resolvers
@@ -43,22 +44,23 @@ type Sensor struct {
 }
 
 type Room struct {
-	ID      string
-	Sensors []Sensor
+	ID string
 }
 
 type Floor struct {
-	ID    string
-	Rooms []Room
+	ID string
 }
 
 type Building struct {
-	ID     string
-	Floors []Floor
+	ID string
 }
 
 // Query Resolver
 type Resolver struct{}
+
+// Global variable to store metadata
+var metadata []MetaDataResponse
+var metadataOnce sync.Once
 
 func SendRequest(endpoint string) ([]byte, error) {
 	username := os.Getenv("BMS_USERNAME")
@@ -82,13 +84,13 @@ func SendRequest(endpoint string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-	    bodyBytes, err := io.ReadAll(resp.Body)
-	    if err != nil {
-	        return nil, fmt.Errorf("failed to read response body after non-200 status: %v", err)
-	    }
-	    bodyString := string(bodyBytes)  // Convert byte slice to string
-	    log.Printf("API returned non-200 status: %d, response: %s", resp.StatusCode, bodyString)
-	    return nil, fmt.Errorf("API returned non-200 status: %d", resp.StatusCode)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body after non-200 status: %v", err)
+		}
+		bodyString := string(bodyBytes) // Convert byte slice to string
+		log.Printf("API returned non-200 status: %d, response: %s", resp.StatusCode, bodyString)
+		return nil, fmt.Errorf("API returned non-200 status: %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -101,17 +103,18 @@ func SendRequest(endpoint string) ([]byte, error) {
 
 // FetchMetadata makes an API call to get metadata
 func FetchMetaData() ([]MetaDataResponse, error) {
-	body, err := SendRequest("https://bms-api.build.aau.dk/api/v1/metadata")
-	if err != nil {
-		return nil, fmt.Errorf("failed to send metadata request: %v", err)
-	}
-
-	var metadata []MetaDataResponse
-	if err := json.Unmarshal(body, &metadata); err != nil {
-		return nil, fmt.Errorf("failed to parse metadata JSON: %v", err)
-	}
-
-	return metadata, nil
+	var err error
+	metadataOnce.Do(func() {
+		var body []byte
+		body, err = SendRequest("https://bms-api.build.aau.dk/api/v1/metadata")
+		if err != nil {
+			return
+		}
+		if err = json.Unmarshal(body, &metadata); err != nil {
+			return
+		}
+	})
+	return metadata, err
 }
 
 // SplitSourcePath extracts structured information from the given source path.
@@ -133,20 +136,20 @@ func SplitSourcePath(sourcePath string) (string, string, string, string, error) 
 	roomSpecParts := strings.SplitN(roomSpecification, "_", 3)
 
 	switch len(roomSpecParts) {
-		case 1: // Only one part found → It's the building ID
-			buildingID = roomSpecParts[0]
-			floorID = "undefined"
-			roomID = "undefined"
-		case 2: // Two parts found → Floor is "undefined", take full second part as room ID
-			buildingID = roomSpecParts[0]
-			floorID = "undefined"
-			roomID = roomSpecParts[1]
-		case 3: // Normal case → Assign all three values correctly
-			buildingID = roomSpecParts[0]
-			floorID = roomSpecParts[1]
-			roomID = roomSpecParts[2]
-		default:
-			return "", "", "", "", fmt.Errorf("unexpected error while parsing room specification: %s", roomSpecification)
+	case 1: // Only one part found → It's the building ID
+		buildingID = roomSpecParts[0]
+		floorID = "undefined"
+		roomID = "undefined"
+	case 2: // Two parts found → Floor is "undefined", take full second part as room ID
+		buildingID = roomSpecParts[0]
+		floorID = "undefined"
+		roomID = roomSpecParts[1]
+	case 3: // Normal case → Assign all three values correctly
+		buildingID = roomSpecParts[0]
+		floorID = roomSpecParts[1]
+		roomID = roomSpecParts[2]
+	default:
+		return "", "", "", "", fmt.Errorf("unexpected error while parsing room specification: %s", roomSpecification)
 	}
 
 	// Extract sensorType (last element of restPath)
@@ -156,106 +159,141 @@ func SplitSourcePath(sourcePath string) (string, string, string, string, error) 
 	return buildingID, floorID, roomID, sensorType, nil
 }
 
-func ParseMetaData(metaData []MetaDataResponse, filterIDs *[]string) ([]Building, error) {
-	buildingMap := make(map[string]*Building)
-
-	for _, meta := range metaData {
-		buildingID, floorID, roomID, sensorType, err := SplitSourcePath(meta.Source)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse room specification: %v", err)
-		}
-
-		// Find or create the building
-		building, exists := buildingMap[buildingID]
-		if !exists {
-			building = &Building{ID: buildingID, Floors: []Floor{}}
-			buildingMap[buildingID] = building
-		}
-
-		// Find or create the floor
-		var floor *Floor
-		for i := range building.Floors {
-			if building.Floors[i].ID == floorID {
-				floor = &building.Floors[i]
-				break
-			}
-		}
-		if floor == nil {
-			building.Floors = append(building.Floors, Floor{ID: floorID, Rooms: []Room{}})
-			floor = &building.Floors[len(building.Floors)-1]
-		}
-
-		// Find or create the room
-		var room *Room
-		for i := range floor.Rooms {
-			if floor.Rooms[i].ID == roomID {
-				room = &floor.Rooms[i]
-				break
-			}
-		}
-		if room == nil {
-			floor.Rooms = append(floor.Rooms, Room{ID: roomID, Sensors: []Sensor{}})
-			room = &floor.Rooms[len(floor.Rooms)-1]
-		}
-
-		// Add sensor to the room
-		sensor := Sensor{
-			ExternalID: fmt.Sprintf("%d", meta.ExternalID),
-			SourcePath: meta.Source,
-			Unit:       meta.Unit,
-			Type:       sensorType,
-		}
-		room.Sensors = append(room.Sensors, sensor)
-	}
-
-	// Convert map values to slice and filter by IDs
-	var buildings []Building
-	if filterIDs == nil || len(*filterIDs) == 0 {
-		// If no filter is provided, return all buildings
-		for _, b := range buildingMap {
-			buildings = append(buildings, *b)
-		}
-	} else {
-		// Return only buildings that match the filter
-		idSet := make(map[string]struct{}, len(*filterIDs))
-		for _, id := range *filterIDs {
-			idSet[id] = struct{}{}
-		}
-		for _, b := range buildingMap {
-			if _, exists := idSet[b.ID]; exists {
-				buildings = append(buildings, *b)
-			}
-		}
-	}
-
-	return buildings, nil
-}
-
-func (r *Resolver) Building(ctx context.Context, args struct{ IDs *[]string }) ([]Building, error) {
-	log.Println("Fetching building with IDs:", args.IDs)
-
+// Resolver for Building.Floors
+func (b *Building) Floors(ctx context.Context, args struct{ FloorIDs *[]string }) ([]*Floor, error) {
 	metadata, err := FetchMetaData()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch metadata: %v", err)
 	}
 
-	buildings, err := ParseMetaData(metadata, args.IDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse metadata: %v", err)
+	// Collect unique floors for this building
+	floorMap := make(map[string]*Floor)
+	for _, meta := range metadata {
+		buildingID, floorID, _, _, err := SplitSourcePath(meta.Source)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse source path: %v", err)
+		}
+
+		if buildingID != b.ID {
+			continue
+		}
+
+		if _, exists := floorMap[floorID]; !exists {
+			floorMap[floorID] = &Floor{ID: floorID}
+		}
 	}
 
-	return buildings, nil
-}
-
-func convertToTime(input string) (time.Time, error) {
-	t, err := time.Parse("2006-01-02 15:04:05", input)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse timestamp: %v", err)
+	// Apply floor filter
+	var floors []*Floor
+	for _, floor := range floorMap {
+		if args.FloorIDs == nil || len(*args.FloorIDs) == 0 {
+			floors = append(floors, floor)
+		} else {
+			for _, id := range *args.FloorIDs {
+				if floor.ID == id {
+					floors = append(floors, floor)
+					break
+				}
+			}
+		}
 	}
-	return t, nil
+
+	return floors, nil
 }
 
-func (s Sensor) Values(ctx context.Context, args struct {
+// Resolver for Floor.Rooms
+func (f *Floor) Rooms(ctx context.Context, args struct{ RoomIDs *[]string }) ([]*Room, error) {
+	metadata, err := FetchMetaData()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch metadata: %v", err)
+	}
+
+	// Collect unique rooms for this floor
+	roomMap := make(map[string]*Room)
+	for _, meta := range metadata {
+		buildingID, floorID, roomID, _, err := SplitSourcePath(meta.Source)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse source path: %v", err)
+		}
+
+		if buildingID != "" && floorID != f.ID {
+			continue
+		}
+
+		if _, exists := roomMap[roomID]; !exists {
+			roomMap[roomID] = &Room{ID: roomID}
+		}
+	}
+
+	// Apply room filter
+	var rooms []*Room
+	for _, room := range roomMap {
+		if args.RoomIDs == nil || len(*args.RoomIDs) == 0 {
+			rooms = append(rooms, room)
+		} else {
+			for _, id := range *args.RoomIDs {
+				if room.ID == id {
+					rooms = append(rooms, room)
+					break
+				}
+			}
+		}
+	}
+
+	return rooms, nil
+}
+
+// Resolver for Room.Sensors
+func (r *Room) Sensors(ctx context.Context, args struct{ SensorIDs *[]string }) ([]*Sensor, error) {
+	metadata, err := FetchMetaData()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch metadata: %v", err)
+	}
+
+	// Collect sensors for this room
+	var sensors []*Sensor
+	for _, meta := range metadata {
+		_, _, roomID, sensorType, err := SplitSourcePath(meta.Source)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse source path: %v", err)
+		}
+
+		// Skip sensors that don't belong to this room
+		if roomID != r.ID {
+			continue
+		}
+
+		// Convert ExternalID (int32) to a string
+		externalIDStr := fmt.Sprintf("%d", meta.ExternalID)
+
+		// Create the Sensor object
+		sensor := &Sensor{
+			ExternalID: externalIDStr, // Use the string version of ExternalID
+			SourcePath: meta.Source,
+			Unit:       meta.Unit,
+			Type:       sensorType,
+		}
+
+		// Apply sensor filter
+		if args.SensorIDs == nil || len(*args.SensorIDs) == 0 {
+			// If no filter is provided, include all sensors
+			sensors = append(sensors, sensor)
+		} else {
+			// Include only sensors with matching IDs
+			for _, id := range *args.SensorIDs {
+				if sensor.ExternalID == id {
+					sensors = append(sensors, sensor)
+					break
+				}
+			}
+		}
+	}
+
+	return sensors, nil
+}
+
+// Resolver for Sensor.Values
+func (s *Sensor) Values(ctx context.Context, args struct {
 	StartTime graphql.Time
 	EndTime   *graphql.Time
 }) ([]Value, error) {
@@ -303,10 +341,47 @@ func (s Sensor) Values(ctx context.Context, args struct {
 	return values, nil
 }
 
+// Resolver for Query.Building
+func (r *Resolver) Building(ctx context.Context, args struct{ IDs *[]string }) ([]*Building, error) {
+	metadata, err := FetchMetaData()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch metadata: %v", err)
+	}
+
+	// Collect unique buildings
+	buildingMap := make(map[string]*Building)
+	for _, meta := range metadata {
+		buildingID, _, _, _, err := SplitSourcePath(meta.Source)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse source path: %v", err)
+		}
+
+		if _, exists := buildingMap[buildingID]; !exists {
+			buildingMap[buildingID] = &Building{ID: buildingID}
+		}
+	}
+
+	// Apply building filter
+	var buildings []*Building
+	for _, building := range buildingMap {
+		if args.IDs == nil || len(*args.IDs) == 0 {
+			buildings = append(buildings, building)
+		} else {
+			for _, id := range *args.IDs {
+				if building.ID == id {
+					buildings = append(buildings, building)
+					break
+				}
+			}
+		}
+	}
+
+	return buildings, nil
+}
+
 func main() {
 	godotenv.Load()
-	// metadataURL := "https://bms-api.build.aau.dk/api/v1/metadata"
-	// trendDataURL := "https://bms-api.build.aau.dk/api/v1/trenddata"
+
 	// Read GraphQL schema
 	schemaFile, err := os.ReadFile("BMS-api.schema.graphql")
 	if err != nil {
