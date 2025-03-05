@@ -1,0 +1,12 @@
+scalar Time
+
+type Query {
+    getTelemetryData(startTime: Time!, endTs: Time): [TelemetryData!]!
+}
+
+type TelemetryData {
+    timestamp: String!
+    doorA: Int
+    doorB: Int
+    doorC: Int
+}
