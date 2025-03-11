@@ -1,0 +1,21 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+scalar Time
+
+type Value {
+    timestamp: Time!
+    value: Float!
+}
+
+type Sensor {
+    externalID: String!
+    sourcePath: String!
+    unit: String!
+    values(startTime: Time!, endTime: Time): [Value!]!
+}
+
+type Query {
+    sensors(ids: [String!]): [Sensor!]!
+}
