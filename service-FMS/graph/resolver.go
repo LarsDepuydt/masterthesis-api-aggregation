@@ -103,6 +103,7 @@ func LoadBuildingData() map[string]*model.Building {
 		// Create the Room
 		room := &model.Room{
 			ID:            fmt.Sprintf("%s-%s", floor.ID, roomNumber),
+			Name:          roomNumber,
 			Type:          row[idxGruppe],
 			Area:          area,
 			Circumference: circumference,

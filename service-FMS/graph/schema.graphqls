@@ -4,6 +4,7 @@
 
 type Room {
     id: ID!
+    name: String!
     type: String!
     area: Float!
     circumference: Float!
