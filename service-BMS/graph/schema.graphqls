@@ -9,11 +9,17 @@ type Value {
     value: Float!
 }
 
-type Sensor {
+type Sensor @key(fields: "externalID") {
     externalID: String!
     sourcePath: String!
     unit: String!
     values(startTime: Time!, endTime: Time): [Value!]!
+}
+
+extend type Room @key(fields: "id") {
+    id: ID! @external
+    name: String! @external
+    sensors: [Sensor!]! @requires(fields: "name")
 }
 
 type Query {

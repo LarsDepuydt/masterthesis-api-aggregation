@@ -9,12 +9,22 @@ import (
 type Query struct {
 }
 
+type Room struct {
+	ID      string    `json:"id"`
+	Name    string    `json:"name"`
+	Sensors []*Sensor `json:"sensors"`
+}
+
+func (Room) IsEntity() {}
+
 type Sensor struct {
 	ExternalID string   `json:"externalID"`
 	SourcePath string   `json:"sourcePath"`
 	Unit       string   `json:"unit"`
 	Values     []*Value `json:"values"`
 }
+
+func (Sensor) IsEntity() {}
 
 type Value struct {
 	Timestamp time.Time `json:"timestamp"`

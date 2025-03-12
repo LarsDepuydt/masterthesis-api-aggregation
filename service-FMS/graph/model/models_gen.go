@@ -10,12 +10,16 @@ type Building struct {
 	Floors   []*Floor `json:"floors"`
 }
 
+func (Building) IsEntity() {}
+
 type Floor struct {
 	ID           string  `json:"id"`
 	Name         string  `json:"name"`
 	Rooms        []*Room `json:"rooms"`
 	FloorplanURL string  `json:"floorplanUrl"`
 }
+
+func (Floor) IsEntity() {}
 
 type Query struct {
 }
@@ -27,3 +31,5 @@ type Room struct {
 	Area          float64 `json:"area"`
 	Circumference float64 `json:"circumference"`
 }
+
+func (Room) IsEntity() {}

@@ -16,7 +16,10 @@ import (
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-type Resolver struct{}
+type Resolver struct {
+	metadata     []MetaDataResponse
+	metadataOnce sync.Once
+}
 
 // Api response
 type MetaDataResponse struct {
@@ -75,9 +78,9 @@ func SendRequest(endpoint string) ([]byte, error) {
 }
 
 // FetchMetadata makes an API call to get metadata
-func FetchMetaData() ([]MetaDataResponse, error) {
+func (r *Resolver) FetchMetaData() ([]MetaDataResponse, error) {
 	var err error
-	metadataOnce.Do(func() {
+	r.metadataOnce.Do(func() {
 		var body []byte
 		body, err = SendRequest("https://bms-api.build.aau.dk/api/v1/metadata")
 		if err != nil {

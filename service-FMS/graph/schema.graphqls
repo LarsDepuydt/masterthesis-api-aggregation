@@ -2,7 +2,7 @@
 #
 # https://gqlgen.com/getting-started/
 
-type Room {
+type Room @key(fields: "id") {
     id: ID!
     name: String!
     type: String!
@@ -10,14 +10,14 @@ type Room {
     circumference: Float!
 }
 
-type Floor {
+type Floor @key(fields: "id") {
     id: ID!
     name: String!
     rooms: [Room!]!
     floorplanUrl: String!
 }
 
-type Building {
+type Building @key(fields: "id") {
     id: ID!
     address: String!
     city: String!

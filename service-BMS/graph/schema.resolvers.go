@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-BMS/graph/model"
@@ -16,26 +18,52 @@ import (
 
 // / Sensors is the resolver for the sensors field.
 func (r *queryResolver) Sensors(ctx context.Context, ids []string) ([]*model.Sensor, error) {
-	// Fetch metadata
-	metadata, err := FetchMetaData()
+	metadata, err := r.FetchMetaData()
+	if err != nil {
+		return nil, err
+	}
+
+	var sensors []*model.Sensor
+	for _, m := range metadata {
+		sensorID := strconv.Itoa(int(m.ExternalID))
+
+		// Filter by IDs if specified
+		if ids != nil && !slices.Contains(ids, sensorID) {
+			continue
+		}
+
+		sensors = append(sensors, &model.Sensor{
+			ExternalID: sensorID,
+			SourcePath: m.Source,
+			Unit:       m.Unit,
+		})
+	}
+
+	return sensors, nil
+}
+
+// Sensors is the resolver for the sensors field.
+func (r *roomResolver) Sensors(ctx context.Context, obj *model.Room, federationRequires map[string]any) ([]*model.Sensor, error) {
+	// Get the room name from @requires directive
+	roomName, ok := federationRequires["name"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing required room name")
+	}
+
+	// Load metadata once
+	metadata, err := r.FetchMetaData()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch metadata: %v", err)
 	}
 
 	var sensors []*model.Sensor
-	for _, meta := range metadata {
-		// Convert ExternalID (int32) to string
-		externalIDStr := fmt.Sprintf("%d", meta.ExternalID)
-
-		// Only include sensors whose ExternalID matches one of the provided ids
-		if len(ids) == 0 || slices.Contains(ids, externalIDStr) {
-			// Create the Sensor object
-			sensor := &model.Sensor{
-				ExternalID: externalIDStr, // Use the string version of ExternalID
-				SourcePath: meta.Source,
-				Unit:       meta.Unit,
-			}
-			sensors = append(sensors, sensor)
+	for _, m := range metadata {
+		if strings.Contains(m.Source, roomName) {
+			sensors = append(sensors, &model.Sensor{
+				ExternalID: strconv.Itoa(int(m.ExternalID)),
+				SourcePath: m.Source,
+				Unit:       m.Unit,
+			})
 		}
 	}
 
@@ -86,8 +114,12 @@ func (r *sensorResolver) Values(ctx context.Context, obj *model.Sensor, startTim
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Room returns RoomResolver implementation.
+func (r *Resolver) Room() RoomResolver { return &roomResolver{r} }
+
 // Sensor returns SensorResolver implementation.
 func (r *Resolver) Sensor() SensorResolver { return &sensorResolver{r} }
 
 type queryResolver struct{ *Resolver }
+type roomResolver struct{ *Resolver }
 type sensorResolver struct{ *Resolver }
