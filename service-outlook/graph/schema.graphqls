@@ -1,0 +1,28 @@
+scalar Time
+
+type DepartmentParticipation {
+    department: String!
+    attendee_count: Int!
+    is_external: Boolean!
+}
+
+type Event {
+    eventID: String!
+    subject: String!
+    start: String!
+    end: String!
+    durationMinutes: Int!
+    department_breakdown: [DepartmentParticipation!]!
+    form_participants: String
+    form_department: String
+}
+
+type Room {
+    name: String!
+    email: String!
+    events(startTime: Time!, endTime: Time): [Event!]!
+}
+
+type Query {
+    rooms(emails: [String!]): [Room!]!
+}
