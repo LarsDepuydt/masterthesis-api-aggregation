@@ -40,6 +40,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Machine() MachineResolver
 	Query() QueryResolver
 }
 
@@ -61,8 +62,8 @@ type ComplexityRoot struct {
 	}
 
 	Machine struct {
-		BeverageCounts  func(childComplexity int) int
-		BeverageDetails func(childComplexity int) int
+		BeverageCounts  func(childComplexity int, startTime time.Time, endTime *time.Time) int
+		BeverageDetails func(childComplexity int, startTime time.Time, endTime *time.Time) int
 		MachineID       func(childComplexity int) int
 		MachineName     func(childComplexity int) int
 	}
@@ -72,6 +73,10 @@ type ComplexityRoot struct {
 	}
 }
 
+type MachineResolver interface {
+	BeverageCounts(ctx context.Context, obj *model.Machine, startTime time.Time, endTime *time.Time) ([]*model.BeverageCount, error)
+	BeverageDetails(ctx context.Context, obj *model.Machine, startTime time.Time, endTime *time.Time) ([]*model.BeverageDetail, error)
+}
 type QueryResolver interface {
 	GetMachine(ctx context.Context, machineIds []string) ([]*model.Machine, error)
 }
@@ -149,14 +154,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Machine.BeverageCounts(childComplexity), true
+		args, err := ec.field_Machine_beverageCounts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Machine.BeverageCounts(childComplexity, args["startTime"].(time.Time), args["endTime"].(*time.Time)), true
 
 	case "Machine.beverageDetails":
 		if e.complexity.Machine.BeverageDetails == nil {
 			break
 		}
 
-		return e.complexity.Machine.BeverageDetails(childComplexity), true
+		args, err := ec.field_Machine_beverageDetails_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Machine.BeverageDetails(childComplexity, args["startTime"].(time.Time), args["endTime"].(*time.Time)), true
 
 	case "Machine.machineId":
 		if e.complexity.Machine.MachineID == nil {
@@ -291,6 +306,88 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Machine_beverageCounts_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Machine_beverageCounts_argsStartTime(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["startTime"] = arg0
+	arg1, err := ec.field_Machine_beverageCounts_argsEndTime(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["endTime"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Machine_beverageCounts_argsStartTime(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (time.Time, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("startTime"))
+	if tmp, ok := rawArgs["startTime"]; ok {
+		return ec.unmarshalNTime2timeᚐTime(ctx, tmp)
+	}
+
+	var zeroVal time.Time
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Machine_beverageCounts_argsEndTime(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*time.Time, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("endTime"))
+	if tmp, ok := rawArgs["endTime"]; ok {
+		return ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
+	}
+
+	var zeroVal *time.Time
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Machine_beverageDetails_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Machine_beverageDetails_argsStartTime(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["startTime"] = arg0
+	arg1, err := ec.field_Machine_beverageDetails_argsEndTime(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["endTime"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Machine_beverageDetails_argsStartTime(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (time.Time, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("startTime"))
+	if tmp, ok := rawArgs["startTime"]; ok {
+		return ec.unmarshalNTime2timeᚐTime(ctx, tmp)
+	}
+
+	var zeroVal time.Time
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Machine_beverageDetails_argsEndTime(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*time.Time, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("endTime"))
+	if tmp, ok := rawArgs["endTime"]; ok {
+		return ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
+	}
+
+	var zeroVal *time.Time
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -848,7 +945,7 @@ func (ec *executionContext) _Machine_beverageCounts(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.BeverageCounts, nil
+		return ec.resolvers.Machine().BeverageCounts(rctx, obj, fc.Args["startTime"].(time.Time), fc.Args["endTime"].(*time.Time))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -865,12 +962,12 @@ func (ec *executionContext) _Machine_beverageCounts(ctx context.Context, field g
 	return ec.marshalNBeverageCount2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑcoffeeᚋgraphᚋmodelᚐBeverageCountᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Machine_beverageCounts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Machine_beverageCounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Machine",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -882,6 +979,17 @@ func (ec *executionContext) fieldContext_Machine_beverageCounts(_ context.Contex
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BeverageCount", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Machine_beverageCounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -900,7 +1008,7 @@ func (ec *executionContext) _Machine_beverageDetails(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.BeverageDetails, nil
+		return ec.resolvers.Machine().BeverageDetails(rctx, obj, fc.Args["startTime"].(time.Time), fc.Args["endTime"].(*time.Time))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -917,12 +1025,12 @@ func (ec *executionContext) _Machine_beverageDetails(ctx context.Context, field 
 	return ec.marshalNBeverageDetail2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑcoffeeᚋgraphᚋmodelᚐBeverageDetailᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Machine_beverageDetails(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Machine_beverageDetails(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Machine",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -936,6 +1044,17 @@ func (ec *executionContext) fieldContext_Machine_beverageDetails(_ context.Conte
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BeverageDetail", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Machine_beverageDetails_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -3212,23 +3331,85 @@ func (ec *executionContext) _Machine(ctx context.Context, sel ast.SelectionSet, 
 		case "machineId":
 			out.Values[i] = ec._Machine_machineId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "machineName":
 			out.Values[i] = ec._Machine_machineName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "beverageCounts":
-			out.Values[i] = ec._Machine_beverageCounts(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Machine_beverageCounts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "beverageDetails":
-			out.Values[i] = ec._Machine_beverageDetails(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Machine_beverageDetails(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4222,6 +4403,22 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	res := graphql.MarshalString(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
 	return res
 }
 

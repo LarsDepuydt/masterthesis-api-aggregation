@@ -6,147 +6,190 @@ package graph
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-coffee/graph/model"
 )
 
+// BeverageCounts is the resolver for the beverageCounts field.
+func (r *machineResolver) BeverageCounts(ctx context.Context, obj *model.Machine, startTime time.Time, endTime *time.Time) ([]*model.BeverageCount, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("cannot fetch beverage counts for a nil machine")
+	}
+
+	log.Printf("Resolving BeverageCounts for Machine ID: %s, Start: %v, End: %v", obj.MachineID, startTime, endTime)
+
+	// Base query for counts
+	query := `SELECT id, total_beverages, timestamp FROM beverage_counts WHERE machine_id = $1 AND timestamp >= $2`
+	args := []interface{}{obj.MachineID, startTime}
+	paramIdx := 3 // Start next parameter at $3
+
+	// Add endTime condition if provided
+	if endTime != nil {
+		query += fmt.Sprintf(" AND timestamp <= $%d", paramIdx)
+		args = append(args, *endTime)
+		paramIdx++
+	}
+
+	query += " ORDER BY timestamp DESC"
+
+	rows, err := r.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		log.Printf("Error querying beverage counts for machine %s: %v", obj.MachineID, err)
+		// Return empty list on error? Or the error? Depending on desired behaviour.
+		// Returning error might be better for debugging.
+		return nil, fmt.Errorf("database error fetching beverage counts: %w", err)
+	}
+	defer rows.Close()
+
+	var counts []*model.BeverageCount
+	for rows.Next() {
+		var bc model.BeverageCount
+		var id int64 // Scan DB id into int64 first
+		if err := rows.Scan(&id, &bc.TotalBeverages, &bc.Timestamp); err != nil {
+			log.Printf("Error scanning beverage count row for machine %s: %v", obj.MachineID, err)
+			return nil, fmt.Errorf("database error scanning beverage count row: %w", err)
+		}
+		bc.ID = strconv.FormatInt(id, 10) // Convert id to string for GraphQL model
+		counts = append(counts, &bc)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Printf("Error iterating beverage count rows for machine %s: %v", obj.MachineID, err)
+		return nil, fmt.Errorf("database error iterating beverage counts: %w", err)
+	}
+
+	// Return empty slice if no results, not nil, as per GraphQL non-null list [BeverageCount!]!
+	if counts == nil {
+		counts = []*model.BeverageCount{}
+	}
+
+	return counts, nil
+}
+
+// BeverageDetails is the resolver for the beverageDetails field.
+func (r *machineResolver) BeverageDetails(ctx context.Context, obj *model.Machine, startTime time.Time, endTime *time.Time) ([]*model.BeverageDetail, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("cannot fetch beverage details for a nil machine")
+	}
+
+	log.Printf("Resolving BeverageDetails for Machine ID: %s, Start: %v, End: %v", obj.MachineID, startTime, endTime)
+
+	// Base query for details
+	query := `SELECT id, beverage_name, count, timestamp FROM beverage_details WHERE machine_id = $1 AND timestamp >= $2`
+	args := []interface{}{obj.MachineID, startTime}
+	paramIdx := 3 // Start next parameter at $3
+
+	// Add endTime condition if provided
+	if endTime != nil {
+		query += fmt.Sprintf(" AND timestamp <= $%d", paramIdx)
+		args = append(args, *endTime)
+		paramIdx++
+	}
+
+	query += " ORDER BY timestamp DESC" // Or ASC
+
+	rows, err := r.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		log.Printf("Error querying beverage details for machine %s: %v", obj.MachineID, err)
+		return nil, fmt.Errorf("database error fetching beverage details: %w", err)
+	}
+	defer rows.Close()
+
+	var details []*model.BeverageDetail
+	for rows.Next() {
+		var bd model.BeverageDetail
+		var id int64 // Scan DB id into int64
+		if err := rows.Scan(&id, &bd.BeverageName, &bd.Count, &bd.Timestamp); err != nil {
+			log.Printf("Error scanning beverage detail row for machine %s: %v", obj.MachineID, err)
+			return nil, fmt.Errorf("database error scanning beverage detail row: %w", err)
+		}
+		bd.ID = strconv.FormatInt(id, 10) // Convert id to string
+		details = append(details, &bd)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Printf("Error iterating beverage detail rows for machine %s: %v", obj.MachineID, err)
+		return nil, fmt.Errorf("database error iterating beverage details: %w", err)
+	}
+
+	// Return empty slice if no results, not nil, as per GraphQL non-null list [BeverageDetail!]!
+	if details == nil {
+		details = []*model.BeverageDetail{}
+	}
+
+	return details, nil
+}
+
 // GetMachine is the resolver for the getMachine field.
 func (r *queryResolver) GetMachine(ctx context.Context, machineIds []string) ([]*model.Machine, error) {
+	// Ensure DB is initialized (ideally once at startup)
 	if err := r.initCofeeDBConnection(); err != nil {
 		log.Printf("PostgreSQL initialization error: %v", err)
 		return nil, err
 	}
 
-	query := `
-			SELECT
-				m.machine_id, m.machine_name,
-				bc.id AS count_id, bc.total_beverages, bc.timestamp AS count_timestamp, bc.machine_id AS bc_machine_id,
-				bd.id AS detail_id, bd.beverage_name, bd.count AS detail_count, bd.timestamp AS detail_timestamp, bd.machine_id AS bd_machine_id
-			FROM machines m
-			LEFT JOIN beverage_counts bc ON m.machine_id = bc.machine_id
-			LEFT JOIN beverage_details bd ON m.machine_id = bd.machine_id
-		`
-
+	// Base query selects only machine columns
+	query := `SELECT m.machine_id, m.machine_name FROM machines m`
 	var args []interface{}
+	var conditions []string
+
+	// Add WHERE clause if machineIds are provided
 	if len(machineIds) > 0 {
-		placeholders := ""
-		args = make([]interface{}, len(machineIds))
+		placeholders := make([]string, len(machineIds))
 		for i, id := range machineIds {
-			if i > 0 {
-				placeholders += ", "
-			}
-			placeholders += "$" + strconv.Itoa(i+1)
-			args[i] = id
+			placeholders[i] = "$" + strconv.Itoa(i+1) // Parameters start at $1
+			args = append(args, id)
 		}
-		query += fmt.Sprintf(" WHERE m.machine_id IN (%s)", placeholders)
+		conditions = append(conditions, fmt.Sprintf("m.machine_id IN (%s)", strings.Join(placeholders, ", ")))
 	}
-	// Add ORDER BY to potentially help with processing, although the map handles uniqueness
-	query += " ORDER BY m.machine_id, bc.id, bd.id" // Optional but can sometimes help locality
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+	query += " ORDER BY m.machine_name" // Optional ordering
 
 	rows, err := r.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		log.Printf("Error querying machines with joins: %v", err)
+		log.Printf("Error querying machines: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	machineMap := make(map[string]*model.Machine)
-	// Keep track of added child record IDs *per machine*
-	seenCounts := make(map[string]map[int64]bool)  // map[machineID]map[countID] -> true
-	seenDetails := make(map[string]map[int64]bool) // map[machineID]map[detailID] -> true
-
+	var machines []*model.Machine
 	for rows.Next() {
-		var (
-			machineID      string
-			machineName    string
-			countID        sql.NullInt64
-			totalBeverages sql.NullInt64
-			countTS        sql.NullTime
-			bcMachineID    sql.NullString // Can likely remove this if always same as machineID
-			detailID       sql.NullInt64
-			beverageName   sql.NullString
-			detailCount    sql.NullInt64
-			detailTS       sql.NullTime
-			bdMachineID    sql.NullString // Can likely remove this if always same as machineID
-		)
-
-		if err := rows.Scan(
-			&machineID, &machineName,
-			&countID, &totalBeverages, &countTS, &bcMachineID,
-			&detailID, &beverageName, &detailCount, &detailTS, &bdMachineID,
-		); err != nil {
-			log.Printf("Error scanning joined row: %v", err)
+		var machine model.Machine
+		if err := rows.Scan(&machine.MachineID, &machine.MachineName); err != nil {
+			log.Printf("Error scanning machine row: %v", err)
 			return nil, err
 		}
-
-		// --- Machine Handling ---
-		machine, ok := machineMap[machineID]
-		if !ok {
-			machine = &model.Machine{
-				MachineID:       machineID,
-				MachineName:     machineName,
-				BeverageCounts:  []*model.BeverageCount{},  // Initialize as empty slice
-				BeverageDetails: []*model.BeverageDetail{}, // Initialize as empty slice
-			}
-			machineMap[machineID] = machine
-			// Initialize seen maps for this new machine
-			seenCounts[machineID] = make(map[int64]bool)
-			seenDetails[machineID] = make(map[int64]bool)
-		}
-
-		// --- BeverageCount Handling (Deduplicated) ---
-		// Check if countID is valid AND we haven't seen this countID for this machine yet
-		if countID.Valid && !seenCounts[machineID][countID.Int64] {
-			// bcMachineID check might be redundant if the JOIN guarantees it matches m.machine_id
-			if bcMachineID.Valid {
-				machine.BeverageCounts = append(machine.BeverageCounts, &model.BeverageCount{
-					ID: strconv.FormatInt(countID.Int64, 10),
-					// Assuming Machine in BeverageCount just needs the ID for linking in GraphQL
-					TotalBeverages: int32(totalBeverages.Int64),
-					Timestamp:      countTS.Time, // Store the actual time.Time
-				})
-				// Mark this countID as seen for this machine
-				seenCounts[machineID][countID.Int64] = true
-			}
-		}
-
-		// --- BeverageDetail Handling (Deduplicated) ---
-		// Check if detailID is valid AND we haven't seen this detailID for this machine yet
-		if detailID.Valid && !seenDetails[machineID][detailID.Int64] {
-			// bdMachineID check might be redundant
-			if bdMachineID.Valid {
-				machine.BeverageDetails = append(machine.BeverageDetails, &model.BeverageDetail{
-					ID: strconv.FormatInt(detailID.Int64, 10),
-					// Assuming Machine in BeverageDetail just needs the ID
-					BeverageName: beverageName.String,
-					Count:        int32(detailCount.Int64),
-					Timestamp:    detailTS.Time, // Store the actual time.Time
-				})
-				// Mark this detailID as seen for this machine
-				seenDetails[machineID][detailID.Int64] = true
-			}
-		}
+		// Note: BeverageCounts and BeverageDetails are initially nil/empty.
+		// They will be populated by their respective resolvers if requested in the query.
+		machines = append(machines, &machine)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Printf("Error iterating over joined rows: %v", err)
+		log.Printf("Error iterating over machine rows: %v", err)
 		return nil, err
 	}
 
-	// Convert map to slice for the result
-	result := make([]*model.Machine, 0, len(machineMap))
-	for _, m := range machineMap {
-		result = append(result, m)
+	// If no machines found for specific IDs, return empty list, not error
+	if machines == nil {
+		machines = []*model.Machine{}
 	}
 
-	return result, nil
+	return machines, nil
 }
+
+// Machine returns MachineResolver implementation.
+func (r *Resolver) Machine() MachineResolver { return &machineResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+type machineResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

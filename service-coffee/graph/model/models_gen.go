@@ -8,14 +8,12 @@ import (
 
 type BeverageCount struct {
 	ID             string    `json:"id"`
-	MachineID      *Machine  `json:"machineId"`
 	TotalBeverages int32     `json:"totalBeverages"`
 	Timestamp      time.Time `json:"timestamp"`
 }
 
 type BeverageDetail struct {
 	ID           string    `json:"id"`
-	MachineID    *Machine  `json:"machineId"`
 	BeverageName string    `json:"beverageName"`
 	Count        int32     `json:"count"`
 	Timestamp    time.Time `json:"timestamp"`

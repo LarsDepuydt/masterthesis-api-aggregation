@@ -7,8 +7,8 @@ scalar Time
 type Machine {
     machineId: ID!
     machineName: String!
-    beverageCounts: [BeverageCount!]!
-    beverageDetails: [BeverageDetail!]!
+    beverageCounts(startTime: Time, endTime: Time): [BeverageCount!]!
+    beverageDetails(startTime: Time, endTime: Time): [BeverageDetail!]!
 }
 
 type BeverageCount {
