@@ -1,0 +1,75 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" border="50" scale="3" compressed="false" locked="false" version="26.1.1">
+  <diagram name="Blank" id="YmL12bMKpDGza6XwsDPr">
+    <mxGraphModel dx="3274" dy="1310" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="1" shadow="0">
+      <root>
+        <mxCell id="X5NqExCQtvZxIxQ7pmgY-0" />
+        <mxCell id="1" parent="X5NqExCQtvZxIxQ7pmgY-0" />
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="3PC0X6na9no3xxSYQHZZ-12" target="3PC0X6na9no3xxSYQHZZ-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-12" value="" style="ellipse;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="-1014" y="296" width="424" height="343" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-1" value="" style="shape=mxgraph.signs.food.coffee;html=1;pointerEvents=1;fillColor=#000000;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;align=center;sketch=0;" vertex="1" parent="1">
+          <mxGeometry x="-960" y="450" width="98" height="61" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-4" value="" style="shape=mxgraph.signs.people.walking;html=1;pointerEvents=1;fillColor=#000000;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;align=center;sketch=0;" vertex="1" parent="1">
+          <mxGeometry x="-785" y="332" width="73" height="131.4" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="3PC0X6na9no3xxSYQHZZ-7" target="3PC0X6na9no3xxSYQHZZ-8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-201" y="468" />
+              <mxPoint x="-201" y="357" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="3PC0X6na9no3xxSYQHZZ-7" target="3PC0X6na9no3xxSYQHZZ-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-7" value="" style="points=[[0.13,0.02,0],[0.5,0,0],[0.87,0.02,0],[0.885,0.4,0],[0.985,0.985,0],[0.5,1,0],[0.015,0.985,0],[0.115,0.4,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.laptop;fillColor=#005073;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="-467" y="406.05" width="175.57" height="122.9" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-8" value="" style="image;aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;spacingTop=3;image=img/lib/active_directory/databases.svg;" vertex="1" parent="1">
+          <mxGeometry x="-128" y="296" width="124" height="121.52" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-10" value="" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;" vertex="1" parent="1">
+          <mxGeometry x="-56.5" y="550.25" width="71" height="88.75" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-11" value="Coffee machine" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-941" y="518" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-2" value="" style="fontColor=#0066CC;verticalAlign=top;verticalLabelPosition=bottom;labelPosition=center;align=center;html=1;outlineConnect=0;fillColor=#CCCCCC;strokeColor=#6881B3;gradientColor=none;gradientDirection=north;strokeWidth=2;shape=mxgraph.networks.usb_stick;" vertex="1" parent="1">
+          <mxGeometry x="-726" y="368.4" width="33" height="73.33" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-13" value="x4" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=70;" vertex="1" parent="1">
+          <mxGeometry x="-754" y="569" width="73" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-14" value="Manual collection with USB key" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-797.75" y="467" width="98.5" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.02;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="3PC0X6na9no3xxSYQHZZ-1" target="3PC0X6na9no3xxSYQHZZ-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-17" value="Parse data on computer" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-428.47" y="539" width="98.5" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-20" value="CSV" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="-57.5" y="578" width="73" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-9" value="" style="dashed=0;outlineConnect=0;html=1;align=center;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.weblogos.github" vertex="1" parent="1">
+          <mxGeometry x="-110" y="521.25" width="89" height="89" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-21" value="Store data in db" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-115.25" y="417.52" width="98.5" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-22" value="PSQL" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="-102.5" y="253" width="73" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="3PC0X6na9no3xxSYQHZZ-23" value="Backup data in GitHub repo" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-115.25" y="649" width="98.5" height="36" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
