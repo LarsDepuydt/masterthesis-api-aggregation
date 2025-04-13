@@ -1,0 +1,29 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started
+
+scalar Time
+
+type Machine {
+    machineId: ID!
+    machineName: String!
+    beverageCounts: [BeverageCount!]!
+    beverageDetails: [BeverageDetail!]!
+}
+
+type BeverageCount {
+    id: ID!
+    totalBeverages: Int!
+    timestamp: Time!
+}
+
+type BeverageDetail {
+    id: ID!
+    beverageName: String!
+    count: Int!
+    timestamp: Time!
+}
+
+type Query {
+    getMachine(machineIds: [ID!]): [Machine!]!
+}
