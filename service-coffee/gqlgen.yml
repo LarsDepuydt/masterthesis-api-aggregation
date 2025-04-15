@@ -18,10 +18,10 @@ exec:
   # worker_limit: 1000
 
 # Uncomment to enable federation
-# federation:
-#   filename: graph/federation.go
-#   package: graph
-#   version: 2
+federation:
+  filename: graph/federation.go
+  package: graph
+  version: 2
 #   options:
 #     computed_requires: true
 
@@ -153,6 +153,11 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
+
+  Floor:
+    fields:
+      machines:
+        resolver: true
 
   Machine:
     fields:

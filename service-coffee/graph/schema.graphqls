@@ -4,9 +4,14 @@
 
 scalar Time
 
-type Machine {
-    machineId: ID!
-    machineName: String!
+extend type Floor @key(fields: "id") {
+    id: ID! @external
+    machines: [Machine!]!
+}
+
+type Machine @key(fields: "id") {
+    id: ID!
+    name: String!
     beverageCounts(startTime: Time, endTime: Time): [BeverageCount!]!
     beverageDetails(startTime: Time, endTime: Time): [BeverageDetail!]!
 }
@@ -25,5 +30,5 @@ type BeverageDetail {
 }
 
 type Query {
-    getMachine(machineIds: [ID!]): [Machine!]!
+    machines(machineIDs: [ID!]): [Machine!]!
 }

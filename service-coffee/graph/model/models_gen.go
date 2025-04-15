@@ -19,12 +19,21 @@ type BeverageDetail struct {
 	Timestamp    time.Time `json:"timestamp"`
 }
 
+type Floor struct {
+	ID       string     `json:"id"`
+	Machines []*Machine `json:"machines"`
+}
+
+func (Floor) IsEntity() {}
+
 type Machine struct {
-	MachineID       string            `json:"machineId"`
-	MachineName     string            `json:"machineName"`
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
 	BeverageCounts  []*BeverageCount  `json:"beverageCounts"`
 	BeverageDetails []*BeverageDetail `json:"beverageDetails"`
 }
+
+func (Machine) IsEntity() {}
 
 type Query struct {
 }
