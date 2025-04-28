@@ -17,7 +17,8 @@ type Event {
     form_department: String
 }
 
-type Room {
+extend type Room @key(fields: "id") {
+    id: ID! @external
     name: String!
     email: String!
     events(startTime: Time!, endTime: Time): [Event!]!

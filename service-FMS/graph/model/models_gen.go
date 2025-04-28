@@ -26,7 +26,7 @@ type Query struct {
 
 type Room struct {
 	ID            string  `json:"id"`
-	Name          string  `json:"name"`
+	RoomNumber    string  `json:"roomNumber"`
 	Type          string  `json:"type"`
 	Area          float64 `json:"area"`
 	Circumference float64 `json:"circumference"`

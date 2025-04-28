@@ -81,7 +81,7 @@ type ComplexityRoot struct {
 		Area          func(childComplexity int) int
 		Circumference func(childComplexity int) int
 		ID            func(childComplexity int) int
-		Name          func(childComplexity int) int
+		RoomNumber    func(childComplexity int) int
 		Type          func(childComplexity int) int
 	}
 
@@ -295,12 +295,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Room.ID(childComplexity), true
 
-	case "Room.name":
-		if e.complexity.Room.Name == nil {
+	case "Room.roomNumber":
+		if e.complexity.Room.RoomNumber == nil {
 			break
 		}
 
-		return e.complexity.Room.Name(childComplexity), true
+		return e.complexity.Room.RoomNumber(childComplexity), true
 
 	case "Room.type":
 		if e.complexity.Room.Type == nil {
@@ -1182,8 +1182,8 @@ func (ec *executionContext) fieldContext_Entity_findRoomByID(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Room_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Room_name(ctx, field)
+			case "roomNumber":
+				return ec.fieldContext_Room_roomNumber(ctx, field)
 			case "type":
 				return ec.fieldContext_Room_type(ctx, field)
 			case "area":
@@ -1337,8 +1337,8 @@ func (ec *executionContext) fieldContext_Floor_rooms(_ context.Context, field gr
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Room_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Room_name(ctx, field)
+			case "roomNumber":
+				return ec.fieldContext_Room_roomNumber(ctx, field)
 			case "type":
 				return ec.fieldContext_Room_type(ctx, field)
 			case "area":
@@ -1569,8 +1569,8 @@ func (ec *executionContext) fieldContext_Query_rooms(ctx context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Room_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Room_name(ctx, field)
+			case "roomNumber":
+				return ec.fieldContext_Room_roomNumber(ctx, field)
 			case "type":
 				return ec.fieldContext_Room_type(ctx, field)
 			case "area":
@@ -1873,8 +1873,8 @@ func (ec *executionContext) fieldContext_Room_id(_ context.Context, field graphq
 	return fc, nil
 }
 
-func (ec *executionContext) _Room_name(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Room_name(ctx, field)
+func (ec *executionContext) _Room_roomNumber(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Room_roomNumber(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1887,7 +1887,7 @@ func (ec *executionContext) _Room_name(ctx context.Context, field graphql.Collec
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
+		return obj.RoomNumber, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1904,7 +1904,7 @@ func (ec *executionContext) _Room_name(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Room_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Room_roomNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Room",
 		Field:      field,
@@ -4476,8 +4476,8 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "name":
-			out.Values[i] = ec._Room_name(ctx, field, obj)
+		case "roomNumber":
+			out.Values[i] = ec._Room_roomNumber(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

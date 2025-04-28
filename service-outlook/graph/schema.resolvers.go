@@ -7,76 +7,102 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
+	"slices"
 	"time"
 
+	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-outlook/graph/data"
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-outlook/graph/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Rooms is the resolver for the rooms field.
 func (r *queryResolver) Rooms(ctx context.Context, emails []string) ([]*model.Room, error) {
-	collection := r.getCollection()
-	if collection == nil {
-		return nil, fmt.Errorf("database connection error")
+	collection, err := r.getCollection()
+	if err != nil {
+		return nil, fmt.Errorf("database connection error: %v", err)
 	}
 
-	// Build filter based on provided room emails
+	// Build MongoDB filter
+	// Start with an empty filter. If emails are provided, add the $in condition.
+	// An empty filter will match all documents in the collection.
 	filter := bson.M{}
 	if len(emails) > 0 {
+		// If emails are provided, filter documents to include those with rooms matching ANY of the emails
 		filter["rooms.email"] = bson.M{"$in": emails}
+		log.Printf("Fetching rooms filtered by emails: %v", emails) // Optional: Log the filter applied
+	} else {
+		// If no emails provided, the filter remains empty, fetching all documents.
+		log.Println("No specific emails provided, fetching all rooms.") // Optional: Log behavior
 	}
 
-	// Get distinct room emails
-	roomEmails, err := collection.Distinct(ctx, "rooms.email", filter)
+	// Find documents matching the filter
+	projection := bson.M{"rooms": 1, "_id": 0} // Project only the rooms array
+	cursor, err := collection.Find(ctx, filter, options.Find().SetProjection(projection))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get distinct rooms: %v", err)
+		return nil, fmt.Errorf("failed to query database for rooms: %w", err)
 	}
+	defer cursor.Close(ctx)
 
-	var rooms []*model.Room
-	for _, email := range roomEmails {
-		roomEmail, ok := email.(string)
-		if !ok {
-			continue
-		}
+	uniqueRooms := make(map[string]*model.Room)
 
-		// Get room details from first matching event
-		var event struct {
+	// Iterate through MongoDB documents returned by the query
+	for cursor.Next(ctx) {
+		var doc struct { // Define struct locally for decoding
 			Rooms []MongoRoom `bson:"rooms"`
 		}
+		if err := cursor.Decode(&doc); err != nil {
+			log.Printf("Error decoding document: %v", err)
+			continue // Skip to the next document on decoding error
+		}
 
-		err := collection.FindOne(
-			ctx,
-			bson.M{"rooms.email": roomEmail},
-			options.FindOne().SetProjection(bson.M{"rooms.$": 1}),
-		).Decode(&event)
+		// Iterate through rooms within the current document
+		for _, room := range doc.Rooms {
 
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				continue
+			// Determine if this room should be included based on the original 'emails' input
+			// Include the room if NO emails were provided OR if the room's email is in the provided list.
+			shouldIncludeRoom := len(emails) == 0 || slices.Contains(emails, room.Email)
+
+			// If the room should be included and hasn't been processed yet (based on its email)
+			if shouldIncludeRoom {
+				// Check if we've already added a room with this email from a previous document
+				if _, exists := uniqueRooms[room.Email]; !exists {
+					// Look up ID in static defined data
+					ID := data.HardcodedEmailToIDMapData[room.Email]
+
+					// Add the room to results (using the model defined in your project)
+					// Using the email as the map key ensures uniqueness by email.
+					uniqueRooms[room.Email] = &model.Room{
+						ID:    ID,
+						Name:  room.Name,
+						Email: room.Email,
+					}
+				}
 			}
-			return nil, fmt.Errorf("failed to get room details: %v", err)
 		}
-
-		if len(event.Rooms) == 0 {
-			continue
-		}
-
-		rooms = append(rooms, &model.Room{
-			Name:  event.Rooms[0].Name,
-			Email: event.Rooms[0].Email,
-		})
 	}
 
-	return rooms, nil
+	// Check for errors that might have occurred during cursor iteration
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error after iteration: %w", err)
+	}
+
+	// Convert map values to slice
+	resultRooms := make([]*model.Room, 0, len(uniqueRooms))
+	for _, room := range uniqueRooms {
+		resultRooms = append(resultRooms, room)
+	}
+
+	return resultRooms, nil
 }
 
 // Events is the resolver for the events field.
 func (r *roomResolver) Events(ctx context.Context, obj *model.Room, startTime time.Time, endTime *time.Time) ([]*model.Event, error) {
-	collection := r.getCollection()
-	if collection == nil {
-		return nil, fmt.Errorf("database connection error")
+	collection, err := r.getCollection()
+	if err != nil {
+		// getCollection already logs the specific error
+		return nil, fmt.Errorf("database connection error: %w", err)
 	}
 
 	// Build time filter

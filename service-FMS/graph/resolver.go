@@ -73,7 +73,7 @@ func LoadBuildingData() map[string]*model.Building {
 		b, ok := buildingsData[buildingAddress]
 		if !ok {
 			b = &model.Building{
-				ID:       buildingAddress, // using address as the unique ID
+				ID:       "TMV25", // Change when FMS is more then TMV25!
 				Address:  buildingAddress,
 				City:     row[idxBynavn],
 				Property: row[idxEjendom],
@@ -92,7 +92,7 @@ func LoadBuildingData() map[string]*model.Building {
 		}
 		if floor == nil {
 			floor = &model.Floor{
-				ID:           fmt.Sprintf("%s-%s", buildingAddress, floorName),
+				ID:           fmt.Sprintf("%s-%s", b.ID, floorName),
 				Name:         floorName,
 				FloorplanURL: "", // Placeholder URL; modify if needed
 				Rooms:        []*model.Room{},
@@ -103,7 +103,7 @@ func LoadBuildingData() map[string]*model.Building {
 		// Create the Room
 		room := &model.Room{
 			ID:            fmt.Sprintf("%s-%s", floor.ID, roomNumber),
-			Name:          roomNumber,
+			RoomNumber:    roomNumber,
 			Type:          row[idxGruppe],
 			Area:          area,
 			Circumference: circumference,

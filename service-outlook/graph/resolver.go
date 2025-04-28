@@ -76,10 +76,9 @@ func (r *Resolver) initMongoDB() error {
 	return initErr
 }
 
-func (r *Resolver) getCollection() *mongo.Collection {
+func (r *Resolver) getCollection() (*mongo.Collection, error) {
 	if err := r.initMongoDB(); err != nil {
-		log.Printf("MongoDB initialization error: %v", err)
-		return nil
+		return nil, fmt.Errorf("MongoDB initialization error: %v", err)
 	}
-	return r.mongoClient.Database("bookings_db").Collection("events")
+	return r.mongoClient.Database("bookings_db").Collection("events"), nil
 }

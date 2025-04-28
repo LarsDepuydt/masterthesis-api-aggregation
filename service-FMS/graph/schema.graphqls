@@ -4,7 +4,7 @@
 
 type Room @key(fields: "id") {
     id: ID!
-    name: String!
+    roomNumber: String!
     type: String!
     area: Float!
     circumference: Float!

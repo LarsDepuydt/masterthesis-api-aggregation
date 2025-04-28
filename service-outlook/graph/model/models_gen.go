@@ -23,7 +23,10 @@ type Query struct {
 }
 
 type Room struct {
+	ID     string   `json:"id"`
 	Name   string   `json:"name"`
 	Email  string   `json:"email"`
 	Events []*Event `json:"events"`
 }
+
+func (Room) IsEntity() {}
