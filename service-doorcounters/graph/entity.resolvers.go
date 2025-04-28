@@ -8,12 +8,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-doorcounters/graph/data"
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-doorcounters/graph/model"
 )
 
 // FindBuildingByID is the resolver for the findBuildingByID field.
 func (r *entityResolver) FindBuildingByID(ctx context.Context, id string) (*model.Building, error) {
-	panic(fmt.Errorf("not implemented: FindBuildingByID - findBuildingByID"))
+	return &model.Building{ID: id}, nil
+}
+
+// FindEntranceByID is the resolver for the findEntranceByID field.
+func (r *entityResolver) FindEntranceByID(ctx context.Context, id string) (*model.Entrance, error) {
+	if e, exists := data.EntranceMap[id]; exists {
+		return e, nil
+	}
+	return nil, fmt.Errorf("entrance with ID %s not found", id)
 }
 
 // Entity returns EntityResolver implementation.

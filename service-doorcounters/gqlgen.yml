@@ -153,8 +153,16 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
+  Int32:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int32
 
-  Entrence:
+  Building:
+    fields:
+      entrances:
+        resolver: true
+
+  Entrance:
     fields:
       telemetryData:
         resolver: true

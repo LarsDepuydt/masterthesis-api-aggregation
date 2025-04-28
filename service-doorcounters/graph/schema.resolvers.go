@@ -9,11 +9,23 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-doorcounters/graph/data"
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-doorcounters/graph/model"
 )
 
+// Entrances is the resolver for the entrances field.
+func (r *buildingResolver) Entrances(ctx context.Context, obj *model.Building) ([]*model.Entrance, error) {
+	// Check if this is our specific building
+	if obj.ID != "Thomas Manns Vej 25" {
+		return nil, fmt.Errorf("Entrences for buildings other then 'Thomas Manns Vej 25' are not implemented")
+	}
+
+	// Return all entrances from our static data
+	return data.StaticEntrances, nil
+}
+
 // TelemetryData is the resolver for the telemetryData field.
-func (r *entrenceResolver) TelemetryData(ctx context.Context, obj *model.Entrence, startTime time.Time, endTime *time.Time) ([]*model.TelemetryData, error) {
+func (r *entranceResolver) TelemetryData(ctx context.Context, obj *model.Entrance, startTime time.Time, endTime *time.Time) ([]*model.TelemetryData, error) {
 	// Convert times to milliseconds
 	startTs := startTime.Unix() * 1000
 	var endTs int64
@@ -55,17 +67,10 @@ func (r *entrenceResolver) TelemetryData(ctx context.Context, obj *model.Entrenc
 	return result, nil
 }
 
-// GetEntrences is the resolver for the getEntrences field.
-func (r *queryResolver) GetEntrences(ctx context.Context, ids []string) ([]*model.Entrence, error) {
-	// Static list of entrances
-	allEntrances := []*model.Entrence{
-		{ID: "a", Name: "Door A - direction parking lot"},
-		{ID: "b", Name: "Door B - direction Build building"},
-		{ID: "c", Name: "Door C - direction campus"},
-	}
-
+// GetEntrances is the resolver for the getEntrances field.
+func (r *queryResolver) GetEntrances(ctx context.Context, ids []string) ([]*model.Entrance, error) {
 	if len(ids) == 0 {
-		return allEntrances, nil
+		return data.StaticEntrances, nil
 	}
 
 	// Create a set for faster lookups
@@ -75,8 +80,8 @@ func (r *queryResolver) GetEntrences(ctx context.Context, ids []string) ([]*mode
 	}
 
 	// Filter entrances based on IDs
-	filtered := make([]*model.Entrence, 0)
-	for _, entrance := range allEntrances {
+	filtered := make([]*model.Entrance, 0)
+	for _, entrance := range data.StaticEntrances {
 		if idSet[entrance.ID] {
 			filtered = append(filtered, entrance)
 		}
@@ -85,11 +90,15 @@ func (r *queryResolver) GetEntrences(ctx context.Context, ids []string) ([]*mode
 	return filtered, nil
 }
 
-// Entrence returns EntrenceResolver implementation.
-func (r *Resolver) Entrence() EntrenceResolver { return &entrenceResolver{r} }
+// Building returns BuildingResolver implementation.
+func (r *Resolver) Building() BuildingResolver { return &buildingResolver{r} }
+
+// Entrance returns EntranceResolver implementation.
+func (r *Resolver) Entrance() EntranceResolver { return &entranceResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-type entrenceResolver struct{ *Resolver }
+type buildingResolver struct{ *Resolver }
+type entranceResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

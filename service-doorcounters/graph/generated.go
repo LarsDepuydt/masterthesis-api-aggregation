@@ -41,8 +41,9 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Building() BuildingResolver
 	Entity() EntityResolver
-	Entrence() EntrenceResolver
+	Entrance() EntranceResolver
 	Query() QueryResolver
 }
 
@@ -57,16 +58,17 @@ type ComplexityRoot struct {
 
 	Entity struct {
 		FindBuildingByID func(childComplexity int, id string) int
+		FindEntranceByID func(childComplexity int, id string) int
 	}
 
-	Entrence struct {
+	Entrance struct {
 		ID            func(childComplexity int) int
 		Name          func(childComplexity int) int
 		TelemetryData func(childComplexity int, startTime time.Time, endTime *time.Time) int
 	}
 
 	Query struct {
-		GetEntrences       func(childComplexity int, ids []string) int
+		GetEntrances       func(childComplexity int, ids []string) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]any) int
 	}
@@ -81,14 +83,18 @@ type ComplexityRoot struct {
 	}
 }
 
+type BuildingResolver interface {
+	Entrances(ctx context.Context, obj *model.Building) ([]*model.Entrance, error)
+}
 type EntityResolver interface {
 	FindBuildingByID(ctx context.Context, id string) (*model.Building, error)
+	FindEntranceByID(ctx context.Context, id string) (*model.Entrance, error)
 }
-type EntrenceResolver interface {
-	TelemetryData(ctx context.Context, obj *model.Entrence, startTime time.Time, endTime *time.Time) ([]*model.TelemetryData, error)
+type EntranceResolver interface {
+	TelemetryData(ctx context.Context, obj *model.Entrance, startTime time.Time, endTime *time.Time) ([]*model.TelemetryData, error)
 }
 type QueryResolver interface {
-	GetEntrences(ctx context.Context, ids []string) ([]*model.Entrence, error)
+	GetEntrances(ctx context.Context, ids []string) ([]*model.Entrance, error)
 }
 
 type executableSchema struct {
@@ -136,43 +142,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Entity.FindBuildingByID(childComplexity, args["id"].(string)), true
 
-	case "Entrence.id":
-		if e.complexity.Entrence.ID == nil {
+	case "Entity.findEntranceByID":
+		if e.complexity.Entity.FindEntranceByID == nil {
 			break
 		}
 
-		return e.complexity.Entrence.ID(childComplexity), true
-
-	case "Entrence.name":
-		if e.complexity.Entrence.Name == nil {
-			break
-		}
-
-		return e.complexity.Entrence.Name(childComplexity), true
-
-	case "Entrence.telemetryData":
-		if e.complexity.Entrence.TelemetryData == nil {
-			break
-		}
-
-		args, err := ec.field_Entrence_telemetryData_args(context.TODO(), rawArgs)
+		args, err := ec.field_Entity_findEntranceByID_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Entrence.TelemetryData(childComplexity, args["startTime"].(time.Time), args["endTime"].(*time.Time)), true
+		return e.complexity.Entity.FindEntranceByID(childComplexity, args["id"].(string)), true
 
-	case "Query.getEntrences":
-		if e.complexity.Query.GetEntrences == nil {
+	case "Entrance.id":
+		if e.complexity.Entrance.ID == nil {
 			break
 		}
 
-		args, err := ec.field_Query_getEntrences_args(context.TODO(), rawArgs)
+		return e.complexity.Entrance.ID(childComplexity), true
+
+	case "Entrance.name":
+		if e.complexity.Entrance.Name == nil {
+			break
+		}
+
+		return e.complexity.Entrance.Name(childComplexity), true
+
+	case "Entrance.telemetryData":
+		if e.complexity.Entrance.TelemetryData == nil {
+			break
+		}
+
+		args, err := ec.field_Entrance_telemetryData_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.GetEntrences(childComplexity, args["ids"].([]string)), true
+		return e.complexity.Entrance.TelemetryData(childComplexity, args["startTime"].(time.Time), args["endTime"].(*time.Time)), true
+
+	case "Query.getEntrances":
+		if e.complexity.Query.GetEntrances == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getEntrances_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetEntrances(childComplexity, args["ids"].([]string)), true
 
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
@@ -368,11 +386,12 @@ var sources = []*ast.Source{
 `, BuiltIn: true},
 	{Name: "../federation/entity.graphql", Input: `
 # a union of all types that use the @key directive
-union _Entity = Building
+union _Entity = Building | Entrance
 
 # fake type to build resolver interfaces for users to implement
 type Entity {
 	findBuildingByID(id: ID!,): Building!
+	findEntranceByID(id: ID!,): Entrance!
 }
 
 type _Service {
@@ -414,22 +433,45 @@ func (ec *executionContext) field_Entity_findBuildingByID_argsID(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Entrence_telemetryData_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Entity_findEntranceByID_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Entrence_telemetryData_argsStartTime(ctx, rawArgs)
+	arg0, err := ec.field_Entity_findEntranceByID_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Entity_findEntranceByID_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Entrance_telemetryData_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Entrance_telemetryData_argsStartTime(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["startTime"] = arg0
-	arg1, err := ec.field_Entrence_telemetryData_argsEndTime(ctx, rawArgs)
+	arg1, err := ec.field_Entrance_telemetryData_argsEndTime(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["endTime"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Entrence_telemetryData_argsStartTime(
+func (ec *executionContext) field_Entrance_telemetryData_argsStartTime(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (time.Time, error) {
@@ -442,7 +484,7 @@ func (ec *executionContext) field_Entrence_telemetryData_argsStartTime(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Entrence_telemetryData_argsEndTime(
+func (ec *executionContext) field_Entrance_telemetryData_argsEndTime(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (*time.Time, error) {
@@ -501,17 +543,17 @@ func (ec *executionContext) field_Query__entities_argsRepresentations(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_getEntrences_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Query_getEntrances_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_getEntrences_argsIds(ctx, rawArgs)
+	arg0, err := ec.field_Query_getEntrances_argsIds(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["ids"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Query_getEntrences_argsIds(
+func (ec *executionContext) field_Query_getEntrances_argsIds(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) ([]string, error) {
@@ -682,7 +724,7 @@ func (ec *executionContext) _Building_entrances(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Entrances, nil
+		return ec.resolvers.Building().Entrances(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -694,27 +736,27 @@ func (ec *executionContext) _Building_entrances(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Entrence)
+	res := resTmp.([]*model.Entrance)
 	fc.Result = res
-	return ec.marshalNEntrence2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrenceᚄ(ctx, field.Selections, res)
+	return ec.marshalNEntrance2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntranceᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Building_entrances(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Building",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Entrence_id(ctx, field)
+				return ec.fieldContext_Entrance_id(ctx, field)
 			case "name":
-				return ec.fieldContext_Entrence_name(ctx, field)
+				return ec.fieldContext_Entrance_name(ctx, field)
 			case "telemetryData":
-				return ec.fieldContext_Entrence_telemetryData(ctx, field)
+				return ec.fieldContext_Entrance_telemetryData(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Entrence", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Entrance", field.Name)
 		},
 	}
 	return fc, nil
@@ -781,8 +823,71 @@ func (ec *executionContext) fieldContext_Entity_findBuildingByID(ctx context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _Entrence_id(ctx context.Context, field graphql.CollectedField, obj *model.Entrence) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Entrence_id(ctx, field)
+func (ec *executionContext) _Entity_findEntranceByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Entity_findEntranceByID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Entity().FindEntranceByID(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Entrance)
+	fc.Result = res
+	return ec.marshalNEntrance2ᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrance(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Entity_findEntranceByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Entity",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Entrance_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Entrance_name(ctx, field)
+			case "telemetryData":
+				return ec.fieldContext_Entrance_telemetryData(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Entrance", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Entity_findEntranceByID_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Entrance_id(ctx context.Context, field graphql.CollectedField, obj *model.Entrance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Entrance_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -812,9 +917,9 @@ func (ec *executionContext) _Entrence_id(ctx context.Context, field graphql.Coll
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Entrence_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Entrance_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Entrence",
+		Object:     "Entrance",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -825,8 +930,8 @@ func (ec *executionContext) fieldContext_Entrence_id(_ context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _Entrence_name(ctx context.Context, field graphql.CollectedField, obj *model.Entrence) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Entrence_name(ctx, field)
+func (ec *executionContext) _Entrance_name(ctx context.Context, field graphql.CollectedField, obj *model.Entrance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Entrance_name(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -856,9 +961,9 @@ func (ec *executionContext) _Entrence_name(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Entrence_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Entrance_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Entrence",
+		Object:     "Entrance",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -869,8 +974,8 @@ func (ec *executionContext) fieldContext_Entrence_name(_ context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Entrence_telemetryData(ctx context.Context, field graphql.CollectedField, obj *model.Entrence) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Entrence_telemetryData(ctx, field)
+func (ec *executionContext) _Entrance_telemetryData(ctx context.Context, field graphql.CollectedField, obj *model.Entrance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Entrance_telemetryData(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -883,7 +988,7 @@ func (ec *executionContext) _Entrence_telemetryData(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Entrence().TelemetryData(rctx, obj, fc.Args["startTime"].(time.Time), fc.Args["endTime"].(*time.Time))
+		return ec.resolvers.Entrance().TelemetryData(rctx, obj, fc.Args["startTime"].(time.Time), fc.Args["endTime"].(*time.Time))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -900,9 +1005,9 @@ func (ec *executionContext) _Entrence_telemetryData(ctx context.Context, field g
 	return ec.marshalNTelemetryData2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐTelemetryDataᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Entrence_telemetryData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Entrance_telemetryData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Entrence",
+		Object:     "Entrance",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
@@ -923,15 +1028,15 @@ func (ec *executionContext) fieldContext_Entrence_telemetryData(ctx context.Cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Entrence_telemetryData_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Entrance_telemetryData_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_getEntrences(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getEntrences(ctx, field)
+func (ec *executionContext) _Query_getEntrances(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getEntrances(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -944,7 +1049,7 @@ func (ec *executionContext) _Query_getEntrences(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetEntrences(rctx, fc.Args["ids"].([]string))
+		return ec.resolvers.Query().GetEntrances(rctx, fc.Args["ids"].([]string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -956,12 +1061,12 @@ func (ec *executionContext) _Query_getEntrences(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Entrence)
+	res := resTmp.([]*model.Entrance)
 	fc.Result = res
-	return ec.marshalNEntrence2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrenceᚄ(ctx, field.Selections, res)
+	return ec.marshalNEntrance2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntranceᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getEntrences(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getEntrances(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -970,13 +1075,13 @@ func (ec *executionContext) fieldContext_Query_getEntrences(ctx context.Context,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Entrence_id(ctx, field)
+				return ec.fieldContext_Entrance_id(ctx, field)
 			case "name":
-				return ec.fieldContext_Entrence_name(ctx, field)
+				return ec.fieldContext_Entrance_name(ctx, field)
 			case "telemetryData":
-				return ec.fieldContext_Entrence_telemetryData(ctx, field)
+				return ec.fieldContext_Entrance_telemetryData(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Entrence", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Entrance", field.Name)
 		},
 	}
 	defer func() {
@@ -986,7 +1091,7 @@ func (ec *executionContext) fieldContext_Query_getEntrences(ctx context.Context,
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_getEntrences_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_getEntrances_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3319,6 +3424,13 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 			return graphql.Null
 		}
 		return ec._Building(ctx, sel, obj)
+	case model.Entrance:
+		return ec._Entrance(ctx, sel, &obj)
+	case *model.Entrance:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Entrance(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -3342,13 +3454,44 @@ func (ec *executionContext) _Building(ctx context.Context, sel ast.SelectionSet,
 		case "id":
 			out.Values[i] = ec._Building_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "entrances":
-			out.Values[i] = ec._Building_entrances(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Building_entrances(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3413,6 +3556,28 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "findEntranceByID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Entity_findEntranceByID(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3436,24 +3601,24 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 	return out
 }
 
-var entrenceImplementors = []string{"Entrence"}
+var entranceImplementors = []string{"Entrance", "_Entity"}
 
-func (ec *executionContext) _Entrence(ctx context.Context, sel ast.SelectionSet, obj *model.Entrence) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, entrenceImplementors)
+func (ec *executionContext) _Entrance(ctx context.Context, sel ast.SelectionSet, obj *model.Entrance) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, entranceImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Entrence")
+			out.Values[i] = graphql.MarshalString("Entrance")
 		case "id":
-			out.Values[i] = ec._Entrence_id(ctx, field, obj)
+			out.Values[i] = ec._Entrance_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
-			out.Values[i] = ec._Entrence_name(ctx, field, obj)
+			out.Values[i] = ec._Entrance_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -3466,7 +3631,7 @@ func (ec *executionContext) _Entrence(ctx context.Context, sel ast.SelectionSet,
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Entrence_telemetryData(ctx, field, obj)
+				res = ec._Entrance_telemetryData(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -3535,7 +3700,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "getEntrences":
+		case "getEntrances":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -3544,7 +3709,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getEntrences(ctx, field)
+				res = ec._Query_getEntrances(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -4073,7 +4238,11 @@ func (ec *executionContext) marshalNBuilding2ᚖgithubᚗcomᚋLarsDepuydtᚋmas
 	return ec._Building(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNEntrence2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrenceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Entrence) graphql.Marshaler {
+func (ec *executionContext) marshalNEntrance2githubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrance(ctx context.Context, sel ast.SelectionSet, v model.Entrance) graphql.Marshaler {
+	return ec._Entrance(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEntrance2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntranceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Entrance) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4097,7 +4266,7 @@ func (ec *executionContext) marshalNEntrence2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNEntrence2ᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrence(ctx, sel, v[i])
+			ret[i] = ec.marshalNEntrance2ᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrance(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4117,14 +4286,14 @@ func (ec *executionContext) marshalNEntrence2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNEntrence2ᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrence(ctx context.Context, sel ast.SelectionSet, v *model.Entrence) graphql.Marshaler {
+func (ec *executionContext) marshalNEntrance2ᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑdoorcountersᚋgraphᚋmodelᚐEntrance(ctx context.Context, sel ast.SelectionSet, v *model.Entrance) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._Entrence(ctx, sel, v)
+	return ec._Entrance(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFieldSet2string(ctx context.Context, v any) (string, error) {

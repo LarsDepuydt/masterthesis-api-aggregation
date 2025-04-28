@@ -4,16 +4,18 @@ package model
 
 type Building struct {
 	ID        string      `json:"id"`
-	Entrances []*Entrence `json:"entrances"`
+	Entrances []*Entrance `json:"entrances"`
 }
 
 func (Building) IsEntity() {}
 
-type Entrence struct {
+type Entrance struct {
 	ID            string           `json:"id"`
 	Name          string           `json:"name"`
 	TelemetryData []*TelemetryData `json:"telemetryData"`
 }
+
+func (Entrance) IsEntity() {}
 
 type Query struct {
 }

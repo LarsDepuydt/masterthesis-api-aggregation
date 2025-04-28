@@ -2,10 +2,10 @@ scalar Time
 
 extend type Building @key(fields: "id") {
     id: ID! @external
-    entrances: [Entrence!]!
+    entrances: [Entrance!]!
 }
 
-type Entrence {
+type Entrance @key(fields: "id") {
     id: ID!
     name: String!
     telemetryData(startTime: Time!, endTime: Time): [TelemetryData!]!
@@ -17,5 +17,5 @@ type TelemetryData {
 }
 
 type Query {
-    getEntrences(ids: [ID!]): [Entrence!]!
+    getEntrances(ids: [ID!]): [Entrance!]!
 }
