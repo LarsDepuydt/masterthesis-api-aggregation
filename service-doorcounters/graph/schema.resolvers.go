@@ -6,42 +6,90 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-doorcounters/graph/model"
 )
 
-// GetTelemetryData is the resolver for the getTelemetryData field.
-func (r *queryResolver) GetTelemetryData(ctx context.Context, startTime time.Time, endTs *time.Time) ([]*model.TelemetryData, error) {
-	// Convert GraphQL Time to int64 (UNIX timestamp in milliseconds)
+// TelemetryData is the resolver for the telemetryData field.
+func (r *entrenceResolver) TelemetryData(ctx context.Context, obj *model.Entrence, startTime time.Time, endTime *time.Time) ([]*model.TelemetryData, error) {
+	// Convert times to milliseconds
 	startTs := startTime.Unix() * 1000
-	var endTime int64
-	if endTs != nil {
-		endTime = endTs.Unix() * 1000
+	var endTs int64
+	if endTime != nil {
+		endTs = endTime.Unix() * 1000
 	} else {
-		endTime = time.Now().Unix() * 1000 // Default to current time if not provided
+		endTs = time.Now().Unix() * 1000
 	}
 
-	data, err := FetchTelemetryData(startTs, endTime)
+	// Fetch raw telemetry data
+	data, err := FetchTelemetryData(startTs, endTs)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert timestamps to ISO 8601 format for GraphQL response
-	var graphqlData []*model.TelemetryData
+	// Convert to GraphQL format with door-specific values
+	var result []*model.TelemetryData
 	for _, d := range data {
-		graphqlData = append(graphqlData, &model.TelemetryData{
+		var value *int32
+
+		// Select value based on entrance ID
+		switch obj.ID {
+		case "a":
+			value = d.DoorA
+		case "b":
+			value = d.DoorB
+		case "c":
+			value = d.DoorC
+		default:
+			return nil, fmt.Errorf("unknown entrance ID: %s", obj.ID)
+		}
+
+		result = append(result, &model.TelemetryData{
 			Timestamp: time.Unix(d.Timestamp/1000, 0).Format(time.RFC3339),
-			DoorA:     d.DoorA,
-			DoorB:     d.DoorB,
-			DoorC:     d.DoorC,
+			Value:     value,
 		})
 	}
 
-	return graphqlData, nil
+	return result, nil
 }
+
+// GetEntrences is the resolver for the getEntrences field.
+func (r *queryResolver) GetEntrences(ctx context.Context, ids []string) ([]*model.Entrence, error) {
+	// Static list of entrances
+	allEntrances := []*model.Entrence{
+		{ID: "a", Name: "Door A - direction parking lot"},
+		{ID: "b", Name: "Door B - direction Build building"},
+		{ID: "c", Name: "Door C - direction campus"},
+	}
+
+	if len(ids) == 0 {
+		return allEntrances, nil
+	}
+
+	// Create a set for faster lookups
+	idSet := make(map[string]bool)
+	for _, id := range ids {
+		idSet[id] = true
+	}
+
+	// Filter entrances based on IDs
+	filtered := make([]*model.Entrence, 0)
+	for _, entrance := range allEntrances {
+		if idSet[entrance.ID] {
+			filtered = append(filtered, entrance)
+		}
+	}
+
+	return filtered, nil
+}
+
+// Entrence returns EntrenceResolver implementation.
+func (r *Resolver) Entrence() EntrenceResolver { return &entrenceResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+type entrenceResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

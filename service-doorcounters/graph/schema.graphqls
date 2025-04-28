@@ -1,12 +1,21 @@
 scalar Time
 
-type Query {
-    getTelemetryData(startTime: Time!, endTs: Time): [TelemetryData!]!
+extend type Building @key(fields: "id") {
+    id: ID! @external
+    entrances: [Entrence!]!
+}
+
+type Entrence {
+    id: ID!
+    name: String!
+    telemetryData(startTime: Time!, endTime: Time): [TelemetryData!]!
 }
 
 type TelemetryData {
     timestamp: String!
-    doorA: Int
-    doorB: Int
-    doorC: Int
+    value: Int
+}
+
+type Query {
+    getEntrences(ids: [ID!]): [Entrence!]!
 }

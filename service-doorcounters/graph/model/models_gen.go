@@ -2,12 +2,23 @@
 
 package model
 
+type Building struct {
+	ID        string      `json:"id"`
+	Entrances []*Entrence `json:"entrances"`
+}
+
+func (Building) IsEntity() {}
+
+type Entrence struct {
+	ID            string           `json:"id"`
+	Name          string           `json:"name"`
+	TelemetryData []*TelemetryData `json:"telemetryData"`
+}
+
 type Query struct {
 }
 
 type TelemetryData struct {
 	Timestamp string `json:"timestamp"`
-	DoorA     *int32 `json:"doorA,omitempty"`
-	DoorB     *int32 `json:"doorB,omitempty"`
-	DoorC     *int32 `json:"doorC,omitempty"`
+	Value     *int32 `json:"value,omitempty"`
 }
