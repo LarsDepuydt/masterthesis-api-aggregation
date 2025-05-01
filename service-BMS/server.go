@@ -11,22 +11,13 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-BMS/graph"
-	"github.com/joho/godotenv"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-const defaultPort = "8080"
-
 func main() {
-	// Load environment variables from a .env file located in the parent folder
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	port := os.Getenv("BMS_PORT")
+	port := os.Getenv("APP_LISTEN_PORT")
 	if port == "" {
-		port = defaultPort
+		log.Fatal("Could not find env variable that defined PORT")
 	}
 
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))

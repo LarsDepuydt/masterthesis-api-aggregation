@@ -1,0 +1,74 @@
+services:
+  gateway:
+    build:
+      context: ./service-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - APP_LISTEN_PORT=4000
+    command: ["node", "server.js"]
+
+  doorcounters:
+    build:
+      context: .
+      args:
+        APP_SRC: ./service-doorcounters
+    ports:
+      - "4001:4001"
+    environment:
+      - APP_LISTEN_PORT=4001
+    env_file:
+      - ./service-doorcounters/.env
+    command: ["./app-binary"]
+
+  bms:
+    build:
+      context: .
+      args:
+        APP_SRC: ./service-BMS
+    ports:
+      - "4002:4002"
+    environment:
+      - APP_LISTEN_PORT=4002
+    env_file:
+      - ./service-BMS/.env
+    command: ["./app-binary"]
+
+  fms:
+    build:
+      context: .
+      args:
+        APP_SRC: ./service-FMS
+    ports:
+      - "4003:4003"
+    environment:
+      - APP_LISTEN_PORT=4003
+    volumes:
+      - ./service-FMS/TMV25.csv:/app/TMV25.csv
+    command: ["./app-binary"]
+
+  outlook:
+    build:
+      context: .
+      args:
+        APP_SRC: ./service-outlook
+    ports:
+      - "4004:4004"
+    environment:
+      - APP_LISTEN_PORT=4004
+    env_file:
+      - ./service-outlook/.env
+    command: ["./app-binary"]
+
+  coffee:
+    build:
+      context: .
+      args:
+        APP_SRC: ./service-coffee
+    ports:
+      - "4005:4005"
+    environment:
+      - APP_LISTEN_PORT=4005
+    env_file:
+      - ./service-coffee/.env
+    command: ["./app-binary"]
