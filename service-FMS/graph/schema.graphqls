@@ -1,32 +1,125 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
-
+"""
+Represents a specific room within a floor and building. This type is
+part of a federated schema, indicated by the @key directive.
+"""
 type Room @key(fields: "id") {
+    """
+    The unique identifier of the room.
+    """
     id: ID!
+    """
+    The identifier assigned to the room.
+    """
     roomNumber: String!
+    """
+    The type or category of the room (e.g., 'classroom', 'office', 'meeting room').
+    """
     type: String!
+    """
+    The area of the room, in square meters.
+    """
     area: Float!
+    """
+    The circumference of the room, in meters.
+    """
     circumference: Float!
 }
 
+"""
+Represents a floor within a building. This type is part of a federated
+schema, indicated by the @key directive.
+"""
 type Floor @key(fields: "id") {
+    """
+    The unique identifier of the floor.
+    """
     id: ID!
+    """
+    The name or designation of the floor (e.g., 'Ground Floor', '1st Floor').
+    """
     name: String!
+    """
+    A list of rooms located on this floor.
+    """
     rooms: [Room!]!
+    """
+    The URL pointing to a pdf representing the floorplan
+    of this floor.
+    """
     floorplanUrl: String!
 }
 
+"""
+Represents a building, containing multiple floors. This type is part
+of a federated schema, indicated by the @key directive.
+Currently, this API only provides data for the TMV25 building at AAU Innovate.
+"""
 type Building @key(fields: "id") {
+    """
+    The unique identifier of the building.
+    """
     id: ID!
+    """
+    The street address of the building.
+    """
     address: String!
+    """
+    The city where the building is located.
+    """
     city: String!
+    """
+    The property identifier or name associated with the building within
+    the organization's property management system.
+    """
     property: String!
+    """
+    A list of floors within this building.
+    """
     floors: [Floor!]!
 }
 
+"""
+Provides the root fields for querying building, floor, and room data.
+Note that this API currently only provides data for the TMV25 building
+at AAU Innovate.
+"""
 type Query {
-    buildings(ids: [ID!]): [Building!]!
-    floors(ids: [ID!]): [Floor!]!
-    rooms(ids: [ID!]): [Room!]!
+    """
+    Retrieves a list of buildings.
+    If no IDs are provided, all accessible buildings are returned.
+    Currently, this will only return the TMV25 building at AAU Innovate.
+    """
+    buildings(
+        """
+        An optional list of building IDs to filter the results.
+        If this list is empty or null, all accessible buildings are returned.
+        """
+        ids: [ID!]
+    ): [Building!]!
+
+    """
+    Retrieves a list of floors.
+    If no IDs are provided, all accessible floors are returned (i.e., all floors
+    within the currently supported buildings, which is only TMV25).
+    """
+    floors(
+        """
+        An optional list of floor IDs to filter the results.
+        If this list is empty or null, all accessible floors are returned.
+        """
+        ids: [ID!]
+    ): [Floor!]!
+
+    """
+    Retrieves a list of rooms.
+    If no IDs are provided, all accessible rooms are returned (i.e., all rooms
+    within the currently supported buildings/floors, which is only TMV25).
+    """
+    rooms(
+        """
+        An optional list of room IDs to filter the results.
+        If this list is empty or null, all accessible rooms are returned.
+        """
+        ids: [ID!]
+    ): [Room!]!
 }

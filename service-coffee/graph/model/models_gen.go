@@ -6,34 +6,84 @@ import (
 	"time"
 )
 
+// Represents a data point for the total cumulative beverage count from a machine.
+//
+// Note on Data:
+// The 'totalBeverages' field represents the total number of beverages dispensed
+// by the machine from its start date up to the recorded timestamp of this data point.
+// This number is cumulative and will only increase with subsequent data points.
+// Data is collected manually, so updates are infrequent.
 type BeverageCount struct {
-	ID             string    `json:"id"`
-	TotalBeverages int32     `json:"totalBeverages"`
-	Timestamp      time.Time `json:"timestamp"`
+	// The unique identifier for this beverage count data point.
+	ID string `json:"id"`
+	// The total cumulative number of beverages dispensed by the machine
+	// up to this data point's timestamp.
+	TotalBeverages int32 `json:"totalBeverages"`
+	// The timestamp when this cumulative count was recorded.
+	Timestamp time.Time `json:"timestamp"`
 }
 
+// Represents a data point for the cumulative count of a specific beverage type
+// from a machine.
+//
+// Note on Data:
+// The 'count' field represents the total number of this specific beverage type
+// dispensed by the machine from its start date up to the recorded timestamp
+// of this data point. This number is cumulative and will only increase.
+// Data is collected manually, so updates are infrequent.
 type BeverageDetail struct {
-	ID           string    `json:"id"`
-	BeverageName string    `json:"beverageName"`
-	Count        int32     `json:"count"`
-	Timestamp    time.Time `json:"timestamp"`
+	// The unique identifier for this beverage detail data point.
+	ID string `json:"id"`
+	// The name of the beverage (e.g., 'Coffee', 'Tea', 'Espresso').
+	BeverageName string `json:"beverageName"`
+	// The total cumulative number of this specific beverage type dispensed
+	// by the machine up to this data point's timestamp.
+	Count int32 `json:"count"`
+	// The timestamp when this cumulative count was recorded.
+	Timestamp time.Time `json:"timestamp"`
 }
+
+// Represents a beverage dispensing machine.
+//
+// Note on Data Collection:
+// Data for beverage counts and details is collected manually. This means
+// the data does not update frequently or in real-time. The counts provided
+// (in BeverageCount and BeverageDetail) are cumulative since the machine
+// was put into service, meaning the numbers will only increase over time.
+type BeverageMachine struct {
+	// The unique identifier of the beverage machine.
+	ID string `json:"id"`
+	// The name or identifier of the beverage machine.
+	Name string `json:"name"`
+	// Retrieves cumulative total beverage counts for this machine within a
+	// specified time window.
+	//
+	// Due to manual data collection, the granularity and frequency of data
+	// points depend on when the data was last updated. The 'totalBeverages'
+	// field in the returned BeverageCount objects represents the cumulative
+	// count up to the timestamp of that data point.
+	BeverageCounts []*BeverageCount `json:"beverageCounts"`
+	// Retrieves cumulative counts for each type of beverage dispensed by this
+	// machine within a specified time window.
+	//
+	// Similar to `beverageCounts`, the data depends on manual collection frequency.
+	// The 'count' field in the returned BeverageDetail objects represents the
+	// cumulative count for a specific beverage type up to the timestamp of
+	// that data point.
+	BeverageDetails []*BeverageDetail `json:"beverageDetails"`
+}
+
+func (BeverageMachine) IsEntity() {}
 
 type Floor struct {
-	ID       string     `json:"id"`
-	Machines []*Machine `json:"machines"`
+	ID string `json:"id"`
+	// The total cumulative number of beverages dispensed by the machine
+	// up to this data point's timestamp.
+	BeverageMachines []*BeverageMachine `json:"beverageMachines"`
 }
 
 func (Floor) IsEntity() {}
 
-type Machine struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	BeverageCounts  []*BeverageCount  `json:"beverageCounts"`
-	BeverageDetails []*BeverageDetail `json:"beverageDetails"`
-}
-
-func (Machine) IsEntity() {}
-
+// Provides the root fields for querying beverage machine data.
 type Query struct {
 }

@@ -1,27 +1,83 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
-
+"""
+A custom scalar representing time values. In the Go resolvers, this scalar
+is mapped to the ISO 8601 standard for time.
+"""
 scalar Time
 
+"""
+Represents a data point collected by a sensor, including the timestamp
+of the reading and the recorded value.
+"""
 type Value {
+    """
+    The timestamp when the sensor value was recorded.
+    """
     timestamp: Time!
+    """
+    The value recorded by the sensor at this timestamp.
+    """
     value: Float!
 }
 
+"""
+Represents a sensor within the Building Management System (BMS).
+A sensor is a general term and can represent various types of sensors
+(e.g., temperature, humidity, occupancy).
+"""
 type Sensor @key(fields: "externalID") {
+    """
+    The unique identifier for the sensor within the external BMS. This is used
+    as the primary key for this type in a federated schema.
+    """
     externalID: String!
+    """
+    The path or identifier used within the BMS to locate the data source
+    for this sensor.
+    """
     sourcePath: String!
+    """
+    The unit of measurement for the sensor's value (e.g., '°C', '%RH', 'count').
+    """
     unit: String!
-    values(startTime: Time!, endTime: Time): [Value!]!
+    """
+    Retrieves a list of historical data points (values) recorded by this sensor
+    within a specified time window.
+    """
+    values(
+        """
+        The start time of the window for fetching sensor values.
+        """
+        startTime: Time!
+        """
+        The end time of the window for fetching sensor values. If omitted,
+        the query uses now as the end time.
+        """
+        endTime: Time
+    ): [Value!]!
 }
 
 extend type Room @key(fields: "id") {
     id: ID! @external
     name: String! @external
+    """
+    A list of sensors located within this room.
+    """
     sensors: [Sensor!]! @requires(fields: "name")
 }
 
+"""
+Provides the root fields for querying the BMS sensor data.
+"""
 type Query {
-    sensors(ids: [String!]): [Sensor!]!
+    """
+    Retrieves a list of sensors based on their external IDs.
+    If no IDs are provided, all accessible sensors are returned.
+    """
+    sensors(
+        """
+        An optional list of sensor external IDs to filter the results.
+        If this list is empty or null, all accessible sensors are returned.
+        """
+        ids: [String!]
+    ): [Sensor!]!
 }

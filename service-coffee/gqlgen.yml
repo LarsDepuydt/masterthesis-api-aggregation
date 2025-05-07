@@ -156,10 +156,10 @@ models:
 
   Floor:
     fields:
-      machines:
+      beverageMachines:
         resolver: true
 
-  Machine:
+  BeverageMachine:
     fields:
       beverageCounts:
         resolver: true

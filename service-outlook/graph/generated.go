@@ -118,7 +118,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "DepartmentParticipation.attendee_count":
+	case "DepartmentParticipation.attendeeCount":
 		if e.complexity.DepartmentParticipation.AttendeeCount == nil {
 			break
 		}
@@ -132,7 +132,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.DepartmentParticipation.Department(childComplexity), true
 
-	case "DepartmentParticipation.is_external":
+	case "DepartmentParticipation.isExternal":
 		if e.complexity.DepartmentParticipation.IsExternal == nil {
 			break
 		}
@@ -151,7 +151,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Entity.FindRoomByID(childComplexity, args["id"].(string)), true
 
-	case "Event.department_breakdown":
+	case "Event.departmentBreakdown":
 		if e.complexity.Event.DepartmentBreakdown == nil {
 			break
 		}
@@ -179,14 +179,14 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Event.EventID(childComplexity), true
 
-	case "Event.form_department":
+	case "Event.formDepartment":
 		if e.complexity.Event.FormDepartment == nil {
 			break
 		}
 
 		return e.complexity.Event.FormDepartment(childComplexity), true
 
-	case "Event.form_participants":
+	case "Event.formParticipants":
 		if e.complexity.Event.FormParticipants == nil {
 			break
 		}
@@ -732,8 +732,8 @@ func (ec *executionContext) fieldContext_DepartmentParticipation_department(_ co
 	return fc, nil
 }
 
-func (ec *executionContext) _DepartmentParticipation_attendee_count(ctx context.Context, field graphql.CollectedField, obj *model.DepartmentParticipation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_DepartmentParticipation_attendee_count(ctx, field)
+func (ec *executionContext) _DepartmentParticipation_attendeeCount(ctx context.Context, field graphql.CollectedField, obj *model.DepartmentParticipation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DepartmentParticipation_attendeeCount(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -763,7 +763,7 @@ func (ec *executionContext) _DepartmentParticipation_attendee_count(ctx context.
 	return ec.marshalNInt2int32(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_DepartmentParticipation_attendee_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_DepartmentParticipation_attendeeCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DepartmentParticipation",
 		Field:      field,
@@ -776,8 +776,8 @@ func (ec *executionContext) fieldContext_DepartmentParticipation_attendee_count(
 	return fc, nil
 }
 
-func (ec *executionContext) _DepartmentParticipation_is_external(ctx context.Context, field graphql.CollectedField, obj *model.DepartmentParticipation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_DepartmentParticipation_is_external(ctx, field)
+func (ec *executionContext) _DepartmentParticipation_isExternal(ctx context.Context, field graphql.CollectedField, obj *model.DepartmentParticipation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DepartmentParticipation_isExternal(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -807,7 +807,7 @@ func (ec *executionContext) _DepartmentParticipation_is_external(ctx context.Con
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_DepartmentParticipation_is_external(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_DepartmentParticipation_isExternal(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DepartmentParticipation",
 		Field:      field,
@@ -999,9 +999,9 @@ func (ec *executionContext) _Event_start(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(time.Time)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Event_start(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1011,7 +1011,7 @@ func (ec *executionContext) fieldContext_Event_start(_ context.Context, field gr
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1043,9 +1043,9 @@ func (ec *executionContext) _Event_end(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(time.Time)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Event_end(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1055,7 +1055,7 @@ func (ec *executionContext) fieldContext_Event_end(_ context.Context, field grap
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1105,8 +1105,8 @@ func (ec *executionContext) fieldContext_Event_durationMinutes(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Event_department_breakdown(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Event_department_breakdown(ctx, field)
+func (ec *executionContext) _Event_departmentBreakdown(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_departmentBreakdown(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1136,7 +1136,7 @@ func (ec *executionContext) _Event_department_breakdown(ctx context.Context, fie
 	return ec.marshalNDepartmentParticipation2ᚕᚖgithubᚗcomᚋLarsDepuydtᚋmasterthesisᚑapiᚑaggregationᚋserviceᚑoutlookᚋgraphᚋmodelᚐDepartmentParticipationᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Event_department_breakdown(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Event_departmentBreakdown(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Event",
 		Field:      field,
@@ -1146,10 +1146,10 @@ func (ec *executionContext) fieldContext_Event_department_breakdown(_ context.Co
 			switch field.Name {
 			case "department":
 				return ec.fieldContext_DepartmentParticipation_department(ctx, field)
-			case "attendee_count":
-				return ec.fieldContext_DepartmentParticipation_attendee_count(ctx, field)
-			case "is_external":
-				return ec.fieldContext_DepartmentParticipation_is_external(ctx, field)
+			case "attendeeCount":
+				return ec.fieldContext_DepartmentParticipation_attendeeCount(ctx, field)
+			case "isExternal":
+				return ec.fieldContext_DepartmentParticipation_isExternal(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DepartmentParticipation", field.Name)
 		},
@@ -1157,8 +1157,8 @@ func (ec *executionContext) fieldContext_Event_department_breakdown(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _Event_form_participants(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Event_form_participants(ctx, field)
+func (ec *executionContext) _Event_formParticipants(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_formParticipants(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1180,26 +1180,26 @@ func (ec *executionContext) _Event_form_participants(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*int32)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOInt2ᚖint32(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Event_form_participants(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Event_formParticipants(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Event",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Event_form_department(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Event_form_department(ctx, field)
+func (ec *executionContext) _Event_formDepartment(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_formDepartment(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1226,7 +1226,7 @@ func (ec *executionContext) _Event_form_department(ctx context.Context, field gr
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Event_form_department(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Event_formDepartment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Event",
 		Field:      field,
@@ -1719,12 +1719,12 @@ func (ec *executionContext) fieldContext_Room_events(ctx context.Context, field 
 				return ec.fieldContext_Event_end(ctx, field)
 			case "durationMinutes":
 				return ec.fieldContext_Event_durationMinutes(ctx, field)
-			case "department_breakdown":
-				return ec.fieldContext_Event_department_breakdown(ctx, field)
-			case "form_participants":
-				return ec.fieldContext_Event_form_participants(ctx, field)
-			case "form_department":
-				return ec.fieldContext_Event_form_department(ctx, field)
+			case "departmentBreakdown":
+				return ec.fieldContext_Event_departmentBreakdown(ctx, field)
+			case "formParticipants":
+				return ec.fieldContext_Event_formParticipants(ctx, field)
+			case "formDepartment":
+				return ec.fieldContext_Event_formDepartment(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -3775,13 +3775,13 @@ func (ec *executionContext) _DepartmentParticipation(ctx context.Context, sel as
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "attendee_count":
-			out.Values[i] = ec._DepartmentParticipation_attendee_count(ctx, field, obj)
+		case "attendeeCount":
+			out.Values[i] = ec._DepartmentParticipation_attendeeCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "is_external":
-			out.Values[i] = ec._DepartmentParticipation_is_external(ctx, field, obj)
+		case "isExternal":
+			out.Values[i] = ec._DepartmentParticipation_isExternal(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3908,15 +3908,15 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "department_breakdown":
-			out.Values[i] = ec._Event_department_breakdown(ctx, field, obj)
+		case "departmentBreakdown":
+			out.Values[i] = ec._Event_departmentBreakdown(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "form_participants":
-			out.Values[i] = ec._Event_form_participants(ctx, field, obj)
-		case "form_department":
-			out.Values[i] = ec._Event_form_department(ctx, field, obj)
+		case "formParticipants":
+			out.Values[i] = ec._Event_formParticipants(ctx, field, obj)
+		case "formDepartment":
+			out.Values[i] = ec._Event_formDepartment(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5285,6 +5285,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint32(ctx context.Context, v any) (*int32, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt32(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.SelectionSet, v *int32) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt32(*v)
 	return res
 }
 

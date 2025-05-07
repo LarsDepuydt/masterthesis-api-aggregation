@@ -1,29 +1,131 @@
+"""
+A custom scalar representing time values. In the Go resolvers, this scalar
+is mapped to the ISO 8601 standard for time.
+"""
 scalar Time
 
+"""
+Represents the participation details of a specific department in an event,
+including the number of attendees and whether the department is external
+to the organization (AAU).
+"""
 type DepartmentParticipation {
+    """
+    The name of the department participating in the event.
+    """
     department: String!
-    attendee_count: Int!
-    is_external: Boolean!
+    """
+    The number of attendees from this department.
+    """
+    attendeeCount: Int!
+    """
+    Indicates whether the participating department is external to AAU.
+    'true' means the participants are NOT part of AAU.
+    """
+    isExternal: Boolean!
 }
 
+"""
+Represents a scheduled event, providing key information such as the subject,
+start and end times, duration, and a breakdown of departmental participation.
+For bigger rooms at AAU Innovate, additional form data provides more reliable
+participant information for large events where not all attendees are
+individually invited.
+"""
 type Event {
+    """
+    The unique identifier for the event.
+    """
     eventID: String!
+    """
+    The subject or title of the event.
+    """
     subject: String!
-    start: String!
-    end: String!
+    """
+    The start time of the event, represented in the ISO 8601 format
+    as handled by the Time scalar in Go resolvers.
+    """
+    start: Time!
+    """
+    The end time of the event, represented in the ISO 8601 format
+    as handled by the Time scalar in Go resolvers.
+    """
+    end: Time!
+    """
+    The duration of the event in minutes.
+    """
     durationMinutes: Int!
-    department_breakdown: [DepartmentParticipation!]!
-    form_participants: String
-    form_department: String
+    """
+    A detailed breakdown of attendee counts per department participating
+    in the event. Note that for larger events in bigger rooms at AAU Innovate,
+    the `formParticipants` and `formDepartment` fields may offer more reliable
+    participant numbers than the sum derived from this breakdown, as not all
+    attendees might be individually invited to the meeting itself.
+    """
+    departmentBreakdown: [DepartmentParticipation!]!
+    """
+    Optional field containing information about participants gathered
+    from a form. For events held in bigger rooms at AAU Innovate, this data
+    is typically filled out and is considered a more reliable source for
+    total participant numbers, especially for large events where not all
+    attendees receive direct meeting invitations.
+    """
+    formParticipants: Int
+    """
+    Optional field containing information about the department associated
+    with a form. For events held in bigger rooms at AAU Innovate, this data
+    is typically filled out and provides context about the primary organizing
+    department, offering more reliability than potentially incomplete
+    invitation lists for large events.
+    """
+    formDepartment: String
 }
 
 extend type Room @key(fields: "id") {
     id: ID! @external
+    """
+    The name of the room.
+    """
     name: String!
+    """
+    The email address associated with the room, often used for
+    scheduling purposes.
+    """
     email: String!
-    events(startTime: Time!, endTime: Time): [Event!]!
+    """
+    Retrieves a list of events scheduled for this room within a specified
+    time window.
+    """
+    events(
+        """
+        The start time of the window for fetching events. This field uses the
+        custom Time scalar, which maps to ISO 8601 in Go resolvers.
+        """
+        startTime: Time!
+        """
+        The end time of the window for fetching events. If omitted, the query
+        will use now as the end time. This field uses the custom Time scalar,
+        which maps to ISO 8601 in Go resolvers.
+        """
+        endTime: Time
+    ): [Event!]!
 }
 
+"""
+Provides the root fields for querying data in this GraphQL schema.
+"""
 type Query {
-    rooms(emails: [String!]): [Room!]!
+    """
+    Retrieves a list of available rooms. The results can be filtered by
+    providing a list of specific email addresses. This query can be used
+    to find rooms, including those at AAU Innovate which may have events
+    with associated form data for larger gatherings.
+    """
+    rooms(
+        """
+        An optional list of room email addresses to filter the results.
+        If this list is empty or null, the query will return all accessible rooms.
+        """
+        emails: [String!]
+    ): [Room!]!
 }

@@ -2,21 +2,59 @@
 
 package model
 
+import (
+	"time"
+)
+
+// Represents the participation details of a specific department in an event,
+// including the number of attendees and whether the department is external
+// to the organization (AAU).
 type DepartmentParticipation struct {
-	Department    string `json:"department"`
-	AttendeeCount int32  `json:"attendee_count"`
-	IsExternal    bool   `json:"is_external"`
+	// The name of the department participating in the event.
+	Department string `json:"department"`
+	// The number of attendees from this department.
+	AttendeeCount int32 `json:"attendeeCount"`
+	// Indicates whether the participating department is external to AAU.
+	// 'true' means the participants are NOT part of AAU.
+	IsExternal bool `json:"isExternal"`
 }
 
+// Represents a scheduled event, providing key information such as the subject,
+// start and end times, duration, and a breakdown of departmental participation.
+// For bigger rooms at AAU Innovate, additional form data provides more reliable
+// participant information for large events where not all attendees are
+// individually invited.
 type Event struct {
-	EventID             string                     `json:"eventID"`
-	Subject             string                     `json:"subject"`
-	Start               string                     `json:"start"`
-	End                 string                     `json:"end"`
-	DurationMinutes     int32                      `json:"durationMinutes"`
-	DepartmentBreakdown []*DepartmentParticipation `json:"department_breakdown"`
-	FormParticipants    *string                    `json:"form_participants,omitempty"`
-	FormDepartment      *string                    `json:"form_department,omitempty"`
+	// The unique identifier for the event.
+	EventID string `json:"eventID"`
+	// The subject or title of the event.
+	Subject string `json:"subject"`
+	// The start time of the event, represented in the ISO 8601 format
+	// as handled by the Time scalar in Go resolvers.
+	Start time.Time `json:"start"`
+	// The end time of the event, represented in the ISO 8601 format
+	// as handled by the Time scalar in Go resolvers.
+	End time.Time `json:"end"`
+	// The duration of the event in minutes.
+	DurationMinutes int32 `json:"durationMinutes"`
+	// A detailed breakdown of attendee counts per department participating
+	// in the event. Note that for larger events in bigger rooms at AAU Innovate,
+	// the `formParticipants` and `formDepartment` fields may offer more reliable
+	// participant numbers than the sum derived from this breakdown, as not all
+	// attendees might be individually invited to the meeting itself.
+	DepartmentBreakdown []*DepartmentParticipation `json:"departmentBreakdown"`
+	// Optional field containing information about participants gathered
+	// from a form. For events held in bigger rooms at AAU Innovate, this data
+	// is typically filled out and is considered a more reliable source for
+	// total participant numbers, especially for large events where not all
+	// attendees receive direct meeting invitations.
+	FormParticipants *int32 `json:"formParticipants,omitempty"`
+	// Optional field containing information about the department associated
+	// with a form. For events held in bigger rooms at AAU Innovate, this data
+	// is typically filled out and provides context about the primary organizing
+	// department, offering more reliability than potentially incomplete
+	// invitation lists for large events.
+	FormDepartment *string `json:"formDepartment,omitempty"`
 }
 
 type Query struct {

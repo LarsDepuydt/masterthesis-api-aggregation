@@ -153,6 +153,25 @@ func (ec *executionContext) resolveEntity(
 	}()
 
 	switch typeName {
+	case "BeverageMachine":
+		resolverName, err := entityResolverNameForBeverageMachine(ctx, rep)
+		if err != nil {
+			return nil, fmt.Errorf(`finding resolver for Entity "BeverageMachine": %w`, err)
+		}
+		switch resolverName {
+
+		case "findBeverageMachineByID":
+			id0, err := ec.unmarshalNID2string(ctx, rep["id"])
+			if err != nil {
+				return nil, fmt.Errorf(`unmarshalling param 0 for findBeverageMachineByID(): %w`, err)
+			}
+			entity, err := ec.resolvers.Entity().FindBeverageMachineByID(ctx, id0)
+			if err != nil {
+				return nil, fmt.Errorf(`resolving Entity "BeverageMachine": %w`, err)
+			}
+
+			return entity, nil
+		}
 	case "Floor":
 		resolverName, err := entityResolverNameForFloor(ctx, rep)
 		if err != nil {
@@ -168,25 +187,6 @@ func (ec *executionContext) resolveEntity(
 			entity, err := ec.resolvers.Entity().FindFloorByID(ctx, id0)
 			if err != nil {
 				return nil, fmt.Errorf(`resolving Entity "Floor": %w`, err)
-			}
-
-			return entity, nil
-		}
-	case "Machine":
-		resolverName, err := entityResolverNameForMachine(ctx, rep)
-		if err != nil {
-			return nil, fmt.Errorf(`finding resolver for Entity "Machine": %w`, err)
-		}
-		switch resolverName {
-
-		case "findMachineByID":
-			id0, err := ec.unmarshalNID2string(ctx, rep["id"])
-			if err != nil {
-				return nil, fmt.Errorf(`unmarshalling param 0 for findMachineByID(): %w`, err)
-			}
-			entity, err := ec.resolvers.Entity().FindMachineByID(ctx, id0)
-			if err != nil {
-				return nil, fmt.Errorf(`resolving Entity "Machine": %w`, err)
 			}
 
 			return entity, nil
@@ -215,6 +215,41 @@ func (ec *executionContext) resolveManyEntities(
 	default:
 		return errors.New("unknown type: " + typeName)
 	}
+}
+
+func entityResolverNameForBeverageMachine(ctx context.Context, rep EntityRepresentation) (string, error) {
+	// we collect errors because a later entity resolver may work fine
+	// when an entity has multiple keys
+	entityResolverErrs := []error{}
+	for {
+		var (
+			m   EntityRepresentation
+			val any
+			ok  bool
+		)
+		_ = val
+		// if all of the KeyFields values for this resolver are null,
+		// we shouldn't use use it
+		allNull := true
+		m = rep
+		val, ok = m["id"]
+		if !ok {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to missing Key Field \"id\" for BeverageMachine", ErrTypeNotFound))
+			break
+		}
+		if allNull {
+			allNull = val == nil
+		}
+		if allNull {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to all null value KeyFields for BeverageMachine", ErrTypeNotFound))
+			break
+		}
+		return "findBeverageMachineByID", nil
+	}
+	return "", fmt.Errorf("%w for BeverageMachine due to %v", ErrTypeNotFound,
+		errors.Join(entityResolverErrs...).Error())
 }
 
 func entityResolverNameForFloor(ctx context.Context, rep EntityRepresentation) (string, error) {
@@ -249,40 +284,5 @@ func entityResolverNameForFloor(ctx context.Context, rep EntityRepresentation) (
 		return "findFloorByID", nil
 	}
 	return "", fmt.Errorf("%w for Floor due to %v", ErrTypeNotFound,
-		errors.Join(entityResolverErrs...).Error())
-}
-
-func entityResolverNameForMachine(ctx context.Context, rep EntityRepresentation) (string, error) {
-	// we collect errors because a later entity resolver may work fine
-	// when an entity has multiple keys
-	entityResolverErrs := []error{}
-	for {
-		var (
-			m   EntityRepresentation
-			val any
-			ok  bool
-		)
-		_ = val
-		// if all of the KeyFields values for this resolver are null,
-		// we shouldn't use use it
-		allNull := true
-		m = rep
-		val, ok = m["id"]
-		if !ok {
-			entityResolverErrs = append(entityResolverErrs,
-				fmt.Errorf("%w due to missing Key Field \"id\" for Machine", ErrTypeNotFound))
-			break
-		}
-		if allNull {
-			allNull = val == nil
-		}
-		if allNull {
-			entityResolverErrs = append(entityResolverErrs,
-				fmt.Errorf("%w due to all null value KeyFields for Machine", ErrTypeNotFound))
-			break
-		}
-		return "findMachineByID", nil
-	}
-	return "", fmt.Errorf("%w for Machine due to %v", ErrTypeNotFound,
 		errors.Join(entityResolverErrs...).Error())
 }

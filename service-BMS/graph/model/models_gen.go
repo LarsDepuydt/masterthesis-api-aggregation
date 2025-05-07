@@ -6,27 +6,43 @@ import (
 	"time"
 )
 
+// Provides the root fields for querying the BMS sensor data.
 type Query struct {
 }
 
 type Room struct {
-	ID      string    `json:"id"`
-	Name    string    `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// A list of sensors located within this room.
 	Sensors []*Sensor `json:"sensors"`
 }
 
 func (Room) IsEntity() {}
 
+// Represents a sensor within the Building Management System (BMS).
+// A sensor is a general term and can represent various types of sensors
+// (e.g., temperature, humidity, occupancy).
 type Sensor struct {
-	ExternalID string   `json:"externalID"`
-	SourcePath string   `json:"sourcePath"`
-	Unit       string   `json:"unit"`
-	Values     []*Value `json:"values"`
+	// The unique identifier for the sensor within the external BMS. This is used
+	// as the primary key for this type in a federated schema.
+	ExternalID string `json:"externalID"`
+	// The path or identifier used within the BMS to locate the data source
+	// for this sensor.
+	SourcePath string `json:"sourcePath"`
+	// The unit of measurement for the sensor's value (e.g., '°C', '%RH', 'count').
+	Unit string `json:"unit"`
+	// Retrieves a list of historical data points (values) recorded by this sensor
+	// within a specified time window.
+	Values []*Value `json:"values"`
 }
 
 func (Sensor) IsEntity() {}
 
+// Represents a data point collected by a sensor, including the timestamp
+// of the reading and the recorded value.
 type Value struct {
+	// The timestamp when the sensor value was recorded.
 	Timestamp time.Time `json:"timestamp"`
-	Value     float64   `json:"value"`
+	// The value recorded by the sensor at this timestamp.
+	Value float64 `json:"value"`
 }

@@ -153,10 +153,12 @@ func (r *roomResolver) Events(ctx context.Context, obj *model.Room, startTime ti
 		events = append(events, &model.Event{
 			EventID:             me.EventID,
 			Subject:             me.Subject,
-			Start:               me.Start.Format(time.RFC3339),
-			End:                 me.End.Format(time.RFC3339),
+			Start:               me.Start,
+			End:                 me.End,
 			DurationMinutes:     me.DurationMinutes,
 			DepartmentBreakdown: depts,
+			FormParticipants:    me.FormParticipants,
+			FormDepartment:      me.FormDepartment,
 		})
 	}
 

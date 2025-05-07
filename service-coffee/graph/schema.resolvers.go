@@ -15,42 +15,8 @@ import (
 	"github.com/LarsDepuydt/masterthesis-api-aggregation/service-coffee/graph/model"
 )
 
-// Machines is the resolver for the machines field.
-func (r *floorResolver) Machines(ctx context.Context, obj *model.Floor) ([]*model.Machine, error) {
-	if r.DB == nil {
-		if err := r.initCofeeDBConnection(); err != nil {
-			log.Printf("PostgreSQL init error in Floor.Machines resolver: %v", err)
-			return nil, err
-		}
-	}
-
-	query := `
-		SELECT machine_id, machine_name
-		FROM machines
-		WHERE floor_id = $1
-	`
-	rows, err := r.DB.QueryContext(ctx, query, obj.ID)
-	if err != nil {
-		log.Printf("Error querying machines for floor %s: %v", obj.ID, err)
-		return nil, fmt.Errorf("error fetching machines for floor: %w", err)
-	}
-	defer rows.Close()
-
-	var machines []*model.Machine
-	for rows.Next() {
-		var m model.Machine
-		if err := rows.Scan(&m.ID, &m.Name); err != nil {
-			log.Printf("Error scanning machine for floor %s: %v", obj.ID, err)
-			return nil, fmt.Errorf("error scanning machine: %w", err)
-		}
-		machines = append(machines, &m)
-	}
-
-	return machines, nil
-}
-
 // BeverageCounts is the resolver for the beverageCounts field.
-func (r *machineResolver) BeverageCounts(ctx context.Context, obj *model.Machine, startTime *time.Time, endTime *time.Time) ([]*model.BeverageCount, error) {
+func (r *beverageMachineResolver) BeverageCounts(ctx context.Context, obj *model.BeverageMachine, startTime *time.Time, endTime *time.Time) ([]*model.BeverageCount, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("cannot fetch beverage counts for a nil machine")
 	}
@@ -106,7 +72,7 @@ func (r *machineResolver) BeverageCounts(ctx context.Context, obj *model.Machine
 }
 
 // BeverageDetails is the resolver for the beverageDetails field.
-func (r *machineResolver) BeverageDetails(ctx context.Context, obj *model.Machine, startTime *time.Time, endTime *time.Time) ([]*model.BeverageDetail, error) {
+func (r *beverageMachineResolver) BeverageDetails(ctx context.Context, obj *model.BeverageMachine, startTime *time.Time, endTime *time.Time) ([]*model.BeverageDetail, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("cannot fetch beverage details for a nil machine")
 	}
@@ -157,8 +123,42 @@ func (r *machineResolver) BeverageDetails(ctx context.Context, obj *model.Machin
 	return details, nil
 }
 
-// Machines is the resolver for the machines field.
-func (r *queryResolver) Machines(ctx context.Context, machineIDs []string) ([]*model.Machine, error) {
+// BeverageMachines is the resolver for the beverageMachines field.
+func (r *floorResolver) BeverageMachines(ctx context.Context, obj *model.Floor) ([]*model.BeverageMachine, error) {
+	if r.DB == nil {
+		if err := r.initCofeeDBConnection(); err != nil {
+			log.Printf("PostgreSQL init error in Floor.Machines resolver: %v", err)
+			return nil, err
+		}
+	}
+
+	query := `
+			SELECT machine_id, machine_name
+			FROM machines
+			WHERE floor_id = $1
+		`
+	rows, err := r.DB.QueryContext(ctx, query, obj.ID)
+	if err != nil {
+		log.Printf("Error querying machines for floor %s: %v", obj.ID, err)
+		return nil, fmt.Errorf("error fetching machines for floor: %w", err)
+	}
+	defer rows.Close()
+
+	var machines []*model.BeverageMachine
+	for rows.Next() {
+		var m model.BeverageMachine
+		if err := rows.Scan(&m.ID, &m.Name); err != nil {
+			log.Printf("Error scanning machine for floor %s: %v", obj.ID, err)
+			return nil, fmt.Errorf("error scanning machine: %w", err)
+		}
+		machines = append(machines, &m)
+	}
+
+	return machines, nil
+}
+
+// BeverageMachines is the resolver for the beverageMachines field.
+func (r *queryResolver) BeverageMachines(ctx context.Context, machineIDs []string) ([]*model.BeverageMachine, error) {
 	// Ensure DB is initialized
 	if r.DB == nil {
 		if err := r.initCofeeDBConnection(); err != nil {
@@ -168,9 +168,9 @@ func (r *queryResolver) Machines(ctx context.Context, machineIDs []string) ([]*m
 	}
 
 	query := `
-		SELECT machine_id, machine_name, floor_id
-		FROM machines
-	`
+			SELECT machine_id, machine_name, floor_id
+			FROM machines
+		`
 	var args []interface{}
 	if len(machineIDs) > 0 {
 		placeholders := make([]string, len(machineIDs))
@@ -188,9 +188,9 @@ func (r *queryResolver) Machines(ctx context.Context, machineIDs []string) ([]*m
 	}
 	defer rows.Close()
 
-	var machines []*model.Machine
+	var machines []*model.BeverageMachine
 	for rows.Next() {
-		var machine model.Machine
+		var machine model.BeverageMachine
 		var floorID string // Temporary variable to hold floor_id
 		if err := rows.Scan(&machine.ID, &machine.Name, &floorID); err != nil {
 			log.Printf("Error scanning machine row: %v", err)
@@ -209,15 +209,15 @@ func (r *queryResolver) Machines(ctx context.Context, machineIDs []string) ([]*m
 	return machines, nil
 }
 
+// BeverageMachine returns BeverageMachineResolver implementation.
+func (r *Resolver) BeverageMachine() BeverageMachineResolver { return &beverageMachineResolver{r} }
+
 // Floor returns FloorResolver implementation.
 func (r *Resolver) Floor() FloorResolver { return &floorResolver{r} }
-
-// Machine returns MachineResolver implementation.
-func (r *Resolver) Machine() MachineResolver { return &machineResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+type beverageMachineResolver struct{ *Resolver }
 type floorResolver struct{ *Resolver }
-type machineResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

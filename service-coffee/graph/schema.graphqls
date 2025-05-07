@@ -1,34 +1,153 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started
-
+"""
+A custom scalar representing time values. In the Go resolvers, this scalar
+is mapped to the ISO 8601 standard for time.
+"""
 scalar Time
 
 extend type Floor @key(fields: "id") {
     id: ID! @external
-    machines: [Machine!]!
+    """
+    The total cumulative number of beverages dispensed by the machine
+    up to this data point's timestamp.
+    """
+    beverageMachines: [BeverageMachine!]!
 }
 
-type Machine @key(fields: "id") {
+"""
+Represents a beverage dispensing machine.
+
+Note on Data Collection:
+Data for beverage counts and details is collected manually. This means
+the data does not update frequently or in real-time. The counts provided
+(in BeverageCount and BeverageDetail) are cumulative since the machine
+was put into service, meaning the numbers will only increase over time.
+"""
+type BeverageMachine @key(fields: "id") {
+    """
+    The unique identifier of the beverage machine.
+    """
     id: ID!
+    """
+    The name or identifier of the beverage machine.
+    """
     name: String!
-    beverageCounts(startTime: Time, endTime: Time): [BeverageCount!]!
-    beverageDetails(startTime: Time, endTime: Time): [BeverageDetail!]!
+    """
+    Retrieves cumulative total beverage counts for this machine within a
+    specified time window.
+
+    Due to manual data collection, the granularity and frequency of data
+    points depend on when the data was last updated. The 'totalBeverages'
+    field in the returned BeverageCount objects represents the cumulative
+    count up to the timestamp of that data point.
+    """
+    beverageCounts(
+        """
+        The start time of the window for fetching cumulative total beverage counts.
+        Data points with timestamps after or at this time will be included.
+        """
+        startTime: Time
+        """
+        The end time of the window for fetching cumulative total beverage counts.
+        Data points with timestamps before or at this time will be included.
+        """
+        endTime: Time
+    ): [BeverageCount!]!
+    """
+    Retrieves cumulative counts for each type of beverage dispensed by this
+    machine within a specified time window.
+
+    Similar to `beverageCounts`, the data depends on manual collection frequency.
+    The 'count' field in the returned BeverageDetail objects represents the
+    cumulative count for a specific beverage type up to the timestamp of
+    that data point.
+    """
+    beverageDetails(
+        """
+        The start time of the window for fetching cumulative beverage details.
+        Data points with timestamps after or at this time will be included.
+        """
+        startTime: Time
+        """
+        The end time of the window for fetching cumulative beverage details.
+        Data points with timestamps before or at this time will be included.
+        """
+        endTime: Time
+    ): [BeverageDetail!]!
 }
 
+"""
+Represents a data point for the total cumulative beverage count from a machine.
+
+Note on Data:
+The 'totalBeverages' field represents the total number of beverages dispensed
+by the machine from its start date up to the recorded timestamp of this data point.
+This number is cumulative and will only increase with subsequent data points.
+Data is collected manually, so updates are infrequent.
+"""
 type BeverageCount {
+    """
+    The unique identifier for this beverage count data point.
+    """
     id: ID!
+    """
+    The total cumulative number of beverages dispensed by the machine
+    up to this data point's timestamp.
+    """
     totalBeverages: Int!
+    """
+    The timestamp when this cumulative count was recorded.
+    """
     timestamp: Time!
 }
 
+"""
+Represents a data point for the cumulative count of a specific beverage type
+from a machine.
+
+Note on Data:
+The 'count' field represents the total number of this specific beverage type
+dispensed by the machine from its start date up to the recorded timestamp
+of this data point. This number is cumulative and will only increase.
+Data is collected manually, so updates are infrequent.
+"""
 type BeverageDetail {
+    """
+    The unique identifier for this beverage detail data point.
+    """
     id: ID!
+    """
+    The name of the beverage (e.g., 'Coffee', 'Tea', 'Espresso').
+    """
     beverageName: String!
+    """
+    The total cumulative number of this specific beverage type dispensed
+    by the machine up to this data point's timestamp.
+    """
     count: Int!
+    """
+    The timestamp when this cumulative count was recorded.
+    """
     timestamp: Time!
 }
 
+"""
+Provides the root fields for querying beverage machine data.
+"""
 type Query {
-    machines(machineIDs: [ID!]): [Machine!]!
+    """
+    Retrieves a list of beverage machines.
+    If no IDs are provided, all accessible beverage machines are returned.
+
+    Note on Data Reliability:
+    The data provided for beverage counts and details is collected manually
+    and may not be up-to-date or reflect real-time usage. The counts are
+    cumulative since the machine's inception.
+    """
+    beverageMachines( # Renamed from 'machines'
+        """
+        An optional list of beverage machine IDs to filter the results.
+        If this list is empty or null, all accessible beverage machines are returned.
+        """
+        machineIDs: [ID!]
+    ): [BeverageMachine!]!
 }
