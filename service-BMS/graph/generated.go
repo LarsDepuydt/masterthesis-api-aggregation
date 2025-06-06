@@ -63,9 +63,9 @@ type ComplexityRoot struct {
 	}
 
 	Room struct {
-		ID      func(childComplexity int) int
-		Name    func(childComplexity int) int
-		Sensors func(childComplexity int, federationRequires map[string]any) int
+		ID         func(childComplexity int) int
+		RoomNumber func(childComplexity int) int
+		Sensors    func(childComplexity int, ids []string, federationRequires map[string]any) int
 	}
 
 	Sensor struct {
@@ -93,7 +93,7 @@ type QueryResolver interface {
 	Sensors(ctx context.Context, ids []string) ([]*model.Sensor, error)
 }
 type RoomResolver interface {
-	Sensors(ctx context.Context, obj *model.Room, federationRequires map[string]any) ([]*model.Sensor, error)
+	Sensors(ctx context.Context, obj *model.Room, ids []string, federationRequires map[string]any) ([]*model.Sensor, error)
 }
 type SensorResolver interface {
 	Values(ctx context.Context, obj *model.Sensor, startTime time.Time, endTime *time.Time) ([]*model.Value, error)
@@ -205,12 +205,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Room.ID(childComplexity), true
 
-	case "Room.name":
-		if e.complexity.Room.Name == nil {
+	case "Room.roomNumber":
+		if e.complexity.Room.RoomNumber == nil {
 			break
 		}
 
-		return e.complexity.Room.Name(childComplexity), true
+		return e.complexity.Room.RoomNumber(childComplexity), true
 
 	case "Room.sensors":
 		if e.complexity.Room.Sensors == nil {
@@ -222,7 +222,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Room.Sensors(childComplexity, args["_federationRequires"].(map[string]any)), true
+		return e.complexity.Room.Sensors(childComplexity, args["ids"].([]string), args["_federationRequires"].(map[string]any)), true
 
 	case "Sensor.externalID":
 		if e.complexity.Sensor.ExternalID == nil {
@@ -574,13 +574,31 @@ func (ec *executionContext) field_Query_sensors_argsIds(
 func (ec *executionContext) field_Room_sensors_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Room_sensors_argsFederationRequires(ctx, rawArgs)
+	arg0, err := ec.field_Room_sensors_argsIds(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["_federationRequires"] = arg0
+	args["ids"] = arg0
+	arg1, err := ec.field_Room_sensors_argsFederationRequires(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["_federationRequires"] = arg1
 	return args, nil
 }
+func (ec *executionContext) field_Room_sensors_argsIds(
+	ctx context.Context,
+	rawArgs map[string]any,
+) ([]string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+	if tmp, ok := rawArgs["ids"]; ok {
+		return ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Room_sensors_argsFederationRequires(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -797,8 +815,8 @@ func (ec *executionContext) fieldContext_Entity_findRoomByID(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Room_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Room_name(ctx, field)
+			case "roomNumber":
+				return ec.fieldContext_Room_roomNumber(ctx, field)
 			case "sensors":
 				return ec.fieldContext_Room_sensors(ctx, field)
 			}
@@ -1227,8 +1245,8 @@ func (ec *executionContext) fieldContext_Room_id(_ context.Context, field graphq
 	return fc, nil
 }
 
-func (ec *executionContext) _Room_name(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Room_name(ctx, field)
+func (ec *executionContext) _Room_roomNumber(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Room_roomNumber(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1241,7 +1259,7 @@ func (ec *executionContext) _Room_name(ctx context.Context, field graphql.Collec
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
+		return obj.RoomNumber, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1258,7 +1276,7 @@ func (ec *executionContext) _Room_name(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Room_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Room_roomNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Room",
 		Field:      field,
@@ -1285,7 +1303,7 @@ func (ec *executionContext) _Room_sensors(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Room().Sensors(rctx, obj, fc.Args["_federationRequires"].(map[string]any))
+		return ec.resolvers.Room().Sensors(rctx, obj, fc.Args["ids"].([]string), fc.Args["_federationRequires"].(map[string]any))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3858,8 +3876,8 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "name":
-			out.Values[i] = ec._Room_name(ctx, field, obj)
+		case "roomNumber":
+			out.Values[i] = ec._Room_roomNumber(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

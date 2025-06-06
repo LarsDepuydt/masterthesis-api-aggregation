@@ -8,6 +8,7 @@ var HardcodedIDToEmailMapData = map[string]string{
 	// Matches from TMV25-Stue section
 	"TMV25-Stue-A.006": "tmv25-a.006@adm.aau.dk",
 	"TMV25-Stue-C.009": "tmv25-c.009@adm.aau.dk",
+	"TMV25-Stue-C.004": "tmv25-c.004@adm.aau.dk",
 
 	// Matches from TMV25-1. Sal section
 	"TMV25-1. Sal-A.111":  "tmv25-a.111@adm.aau.dk",
@@ -20,6 +21,7 @@ var HardcodedIDToEmailMapData = map[string]string{
 	"TMV25-1. Sal-C.104b": "tmv25-c.104b@adm.aau.dk",
 	"TMV25-1. Sal-C.107":  "tmv25-c.107@adm.aau.dk",
 	"TMV25-1. Sal-C.106":  "tmv25-c.106@adm.aau.dk",
+	"TMV25-1. Sal-C.102":  "tmv25-c.102@adm.aau.dk",
 
 	// Matches from TMV25-2. Sal section
 	"TMV25-2. Sal-A.202":  "tmv25-a.202@adm.aau.dk",
@@ -28,6 +30,8 @@ var HardcodedIDToEmailMapData = map[string]string{
 	"TMV25-2. Sal-A.218a": "tmv25-a.218a@adm.aau.dk",
 	"TMV25-2. Sal-A.218b": "tmv25-a.218b@adm.aau.dk",
 	"TMV25-2. Sal-B.203":  "tmv25-b.203@adm.aau.dk",
+	"TMV25-2. Sal-A.201a": "tmv25-a.201b@adm.aau.dk",
+	"TMV25-2. Sal-A.201b": "tmv25-a.201a@adm.aau.dk",
 
 	// Matches from TMV25-3. Sal section
 	"TMV25-3. Sal-A.301": "tmv25-a.301@adm.aau.dk",

@@ -1,6 +1,11 @@
 const { ApolloServer } = require("apollo-server");
 const { ApolloGateway, IntrospectAndCompose } = require("@apollo/gateway");
 
+// Define the port, prioritizing the environment variable
+const APP_LISTEN_PORT = process.env.APP_LISTEN_PORT
+  ? parseInt(process.env.APP_LISTEN_PORT, 10) // Convert to Int in base 10
+  : 4000; // Default to 4000 if APP_LISTEN_PORT is not set
+
 const gateway = new ApolloGateway({
   supergraphSdl: new IntrospectAndCompose({
     subgraphs: [
@@ -18,6 +23,6 @@ const server = new ApolloServer({
   subscriptions: false,
 });
 
-server.listen().then(({ url }) => {
+server.listen({ host: "0.0.0.0", port: APP_LISTEN_PORT }).then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`);
 });

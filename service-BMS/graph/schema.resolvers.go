@@ -43,28 +43,61 @@ func (r *queryResolver) Sensors(ctx context.Context, ids []string) ([]*model.Sen
 }
 
 // Sensors is the resolver for the sensors field.
-func (r *roomResolver) Sensors(ctx context.Context, obj *model.Room, federationRequires map[string]any) ([]*model.Sensor, error) {
-	// Get the room name from @requires directive
-	roomName, ok := federationRequires["name"].(string)
+func (r *roomResolver) Sensors(ctx context.Context, obj *model.Room, ids []string, federationRequires map[string]any) ([]*model.Sensor, error) {
+	roomNumber, ok := federationRequires["roomNumber"].(string)
 	if !ok {
-		return nil, fmt.Errorf("missing required room name")
+		return nil, fmt.Errorf("missing required room number")
 	}
 
-	// Load metadata once
 	metadata, err := r.FetchMetaData()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch metadata: %v", err)
 	}
 
+	requestedIDsMap := make(map[string]struct{})
+	if ids != nil {
+		for _, id := range ids {
+			requestedIDsMap[id] = struct{}{}
+		}
+	}
+
 	var sensors []*model.Sensor
 	for _, m := range metadata {
-		if strings.Contains(m.Source, roomName) {
-			sensors = append(sensors, &model.Sensor{
-				ExternalID: strconv.Itoa(int(m.ExternalID)),
-				SourcePath: m.Source,
-				Unit:       m.Unit,
-			})
+		// Extract the room identifier from the path
+		extractedRoomIdentifier := ""
+		if strings.Contains(m.Source, "=IBI") {
+			parts := strings.Split(m.Source, "=IBI")
+			if len(parts) > 0 {
+				beforeIBI := parts[0] // Everything before "=IBI"
+				lastSlashIndex := strings.LastIndex(beforeIBI, "/")
+				if lastSlashIndex != -1 {
+					lastSegment := beforeIBI[lastSlashIndex+1:] // e.g., TM025_1_20_A.001e
+
+					lastUnderscore := strings.LastIndex(lastSegment, "_")
+					if lastUnderscore != -1 && lastUnderscore+1 < len(lastSegment) {
+						extractedRoomIdentifier = lastSegment[lastUnderscore+1:] // e.g., A.001e
+					}
+				}
+			}
 		}
+
+		// Match exactly
+		if extractedRoomIdentifier != roomNumber {
+			continue
+		}
+
+		sensorID := strconv.Itoa(int(m.ExternalID))
+		if ids != nil {
+			if _, found := requestedIDsMap[sensorID]; !found {
+				continue
+			}
+		}
+
+		sensors = append(sensors, &model.Sensor{
+			ExternalID: sensorID,
+			SourcePath: m.Source,
+			Unit:       m.Unit,
+		})
 	}
 
 	return sensors, nil

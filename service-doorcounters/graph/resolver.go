@@ -77,7 +77,7 @@ func FetchTelemetryData(startTs, endTs int64) ([]TelemetryData, error) {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s%s?keys=c1,c2,c3&startTs=%d&endTs=%d&limit=1000", baseURL, dataEndpoint, startTs, endTs)
+	url := fmt.Sprintf("%s%s?keys=c1,c2,c3&startTs=%d&endTs=%d&limit=100000", baseURL, dataEndpoint, startTs, endTs)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("X-Authorization", "Bearer "+token)
 

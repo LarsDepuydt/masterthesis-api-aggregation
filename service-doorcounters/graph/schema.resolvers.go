@@ -16,7 +16,7 @@ import (
 // Entrances is the resolver for the entrances field.
 func (r *buildingResolver) Entrances(ctx context.Context, obj *model.Building) ([]*model.Entrance, error) {
 	// Check if this is our specific building
-	if obj.ID != "Thomas Manns Vej 25" {
+	if obj.ID != "TMV25" {
 		return nil, fmt.Errorf("Entrences for buildings other then 'Thomas Manns Vej 25' are not implemented")
 	}
 

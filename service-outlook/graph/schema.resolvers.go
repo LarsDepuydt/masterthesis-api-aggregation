@@ -30,11 +30,7 @@ func (r *queryResolver) Rooms(ctx context.Context, emails []string) ([]*model.Ro
 	filter := bson.M{}
 	if len(emails) > 0 {
 		// If emails are provided, filter documents to include those with rooms matching ANY of the emails
-		filter["rooms.email"] = bson.M{"$in": emails}
-		log.Printf("Fetching rooms filtered by emails: %v", emails) // Optional: Log the filter applied
-	} else {
-		// If no emails provided, the filter remains empty, fetching all documents.
-		log.Println("No specific emails provided, fetching all rooms.") // Optional: Log behavior
+		filter["room_email"] = bson.M{"$in": emails}
 	}
 
 	// Find documents matching the filter
@@ -50,35 +46,45 @@ func (r *queryResolver) Rooms(ctx context.Context, emails []string) ([]*model.Ro
 	// Iterate through MongoDB documents returned by the query
 	for cursor.Next(ctx) {
 		var doc struct { // Define struct locally for decoding
-			Rooms []MongoRoom `bson:"rooms"`
+			Rooms     []MongoRoom `bson:"rooms"`
+			RoomEmail string      `bson:"room_email"`
 		}
 		if err := cursor.Decode(&doc); err != nil {
 			log.Printf("Error decoding document: %v", err)
 			continue // Skip to the next document on decoding error
 		}
 
-		// Iterate through rooms within the current document
-		for _, room := range doc.Rooms {
+		if len(doc.Rooms) > 0 {
+			// Iterate through rooms within the current document
+			for _, room := range doc.Rooms {
 
-			// Determine if this room should be included based on the original 'emails' input
-			// Include the room if NO emails were provided OR if the room's email is in the provided list.
-			shouldIncludeRoom := len(emails) == 0 || slices.Contains(emails, room.Email)
+				// Determine if this room should be included based on the original 'emails' input
+				// Include the room if NO emails were provided OR if the room's email is in the provided list.
+				shouldIncludeRoom := len(emails) == 0 || slices.Contains(emails, room.Email)
 
-			// If the room should be included and hasn't been processed yet (based on its email)
-			if shouldIncludeRoom {
-				// Check if we've already added a room with this email from a previous document
-				if _, exists := uniqueRooms[room.Email]; !exists {
-					// Look up ID in static defined data
-					ID := data.HardcodedEmailToIDMapData[room.Email]
+				// If the room should be included and hasn't been processed yet (based on its email)
+				if shouldIncludeRoom {
+					// Check if we've already added a room with this email from a previous document
+					if _, exists := uniqueRooms[room.Email]; !exists {
+						// Look up ID in static defined data
+						ID := data.HardcodedEmailToIDMapData[room.Email]
 
-					// Add the room to results (using the model defined in your project)
-					// Using the email as the map key ensures uniqueness by email.
-					uniqueRooms[room.Email] = &model.Room{
-						ID:    ID,
-						Name:  room.Name,
-						Email: room.Email,
+						// Add the room to results (using the model defined in your project)
+						// Using the email as the map key ensures uniqueness by email.
+						uniqueRooms[room.Email] = &model.Room{
+							ID:    ID,
+							Name:  room.Name,
+							Email: room.Email,
+						}
 					}
 				}
+			}
+		} else {
+			// Look up ID in static defined data
+			ID := data.HardcodedEmailToIDMapData[doc.RoomEmail]
+			uniqueRooms[doc.RoomEmail] = &model.Room{
+				ID:    ID,
+				Email: doc.RoomEmail,
 			}
 		}
 	}
@@ -99,29 +105,36 @@ func (r *queryResolver) Rooms(ctx context.Context, emails []string) ([]*model.Ro
 
 // Events is the resolver for the events field.
 func (r *roomResolver) Events(ctx context.Context, obj *model.Room, startTime time.Time, endTime *time.Time) ([]*model.Event, error) {
+	if obj.Email == "" {
+		return []*model.Event{}, nil
+	}
+
 	collection, err := r.getCollection()
 	if err != nil {
-		// getCollection already logs the specific error
 		return nil, fmt.Errorf("database connection error: %w", err)
 	}
 
-	// Build time filter
-	timeFilter := bson.M{"start": bson.M{"$gte": startTime}}
+	// 1. Prepare an array to hold all the top-level conditions for our final $and filter
+	andConditions := bson.A{}
+
+	// 2. Build and add the time filter condition
+	timeFilterConditions := bson.M{"start": bson.M{"$gte": startTime}}
 	if endTime != nil {
-		timeFilter["end"] = bson.M{"$lte": *endTime}
+		timeFilterConditions["end"] = bson.M{"$lte": *endTime}
 	}
+	andConditions = append(andConditions, timeFilterConditions) // Add the time filter document to the $and array
 
-	// Combine with room filter
-	filter := bson.M{
-		"$and": []bson.M{
-			{"rooms.email": obj.Email},
-			timeFilter,
-		},
-	}
+	// 3. Build and add the room filter condition (only checking room_email)
+	roomFilterConditions := bson.M{"room_email": obj.Email}
+	andConditions = append(andConditions, roomFilterConditions)
 
-	cursor, err := collection.Find(ctx, filter)
+	// 4. The final filter is a top-level $and operator applied to the array of conditions
+	finalFilter := bson.M{"$and": andConditions}
+
+	// Use this finalFilter in your Find call
+	cursor, err := collection.Find(ctx, finalFilter)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find events: %v", err)
+		return nil, fmt.Errorf("failed to find events: %w", err)
 	}
 	defer cursor.Close(ctx)
 

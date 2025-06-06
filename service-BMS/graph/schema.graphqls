@@ -58,11 +58,11 @@ type Sensor @key(fields: "externalID") {
 
 extend type Room @key(fields: "id") {
     id: ID! @external
-    name: String! @external
+    roomNumber: String! @external
     """
     A list of sensors located within this room.
     """
-    sensors: [Sensor!]! @requires(fields: "name")
+    sensors(ids: [String!]): [Sensor!]! @requires(fields: "roomNumber")
 }
 
 """

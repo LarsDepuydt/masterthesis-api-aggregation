@@ -11,8 +11,8 @@ type Query struct {
 }
 
 type Room struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID         string `json:"id"`
+	RoomNumber string `json:"roomNumber"`
 	// A list of sensors located within this room.
 	Sensors []*Sensor `json:"sensors"`
 }

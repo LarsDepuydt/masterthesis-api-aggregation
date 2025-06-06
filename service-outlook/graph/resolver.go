@@ -34,6 +34,7 @@ type MongoEvent struct {
 	DepartmentBreakdown []MongoDepartmentParticipation `bson:"department_breakdown"`
 	FormParticipants    *int32                         `bson:"form_participants"`
 	FormDepartment      *string                        `bson:"form_department"`
+	RoomEmail           string                         `bson:"room_email"`
 }
 
 type MongoRoom struct {

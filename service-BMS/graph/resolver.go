@@ -77,18 +77,42 @@ func SendRequest(endpoint string) ([]byte, error) {
 	return body, nil
 }
 
-// FetchMetadata makes an API call to get metadata
+// FetchMetadata makes an API call to get metadata.
+// It checks if metadata is already populated on the Resolver struct.
+// The sync.Once ensures that the API call and unmarshaling happen only once
+// even if multiple goroutines call this concurrently when metadata is empty.
 func (r *Resolver) FetchMetaData() ([]MetaDataResponse, error) {
-	var err error
+	// First, check if metadata is already loaded.
+	// This non-blocking check avoids acquiring the sync.Once mutex
+	// if the data is already there.
+	if r.metadata != nil && len(r.metadata) > 0 {
+		return r.metadata, nil
+	}
+
+	var fetchErr error // Declare fetchErr to capture error from the Do function
+
+	// Use sync.Once to ensure the fetching logic runs only once,
+	// especially for the first time or if a previous attempt failed (and cleared metadata).
 	r.metadataOnce.Do(func() {
+		log.Println("FetchMetaData: Metadata not loaded. Initiating API call...")
 		var body []byte
-		body, err = SendRequest("https://bms-api.build.aau.dk/api/v1/metadata")
-		if err != nil {
+		body, fetchErr = SendRequest("https://bms-api.build.aau.dk/api/v1/metadata")
+		if fetchErr != nil {
+			log.Printf("FetchMetaData: Error sending request: %v", fetchErr)
+			// Do not return here, let fetchErr be set and returned by the outer function.
 			return
 		}
-		if err = json.Unmarshal(body, &metadata); err != nil {
+
+		// Unmarshal into the Resolver's metadata field
+		if fetchErr = json.Unmarshal(body, &r.metadata); fetchErr != nil {
+			log.Printf("FetchMetaData: Error unmarshaling response: %v", fetchErr)
+			// Do not return here, let fetchErr be set and returned by the outer function.
 			return
 		}
+		log.Printf("FetchMetaData: Successfully loaded %d metadata entries.", len(r.metadata))
 	})
-	return metadata, err
+
+	// If fetchErr was set inside the Do function, return it.
+	// Otherwise, return the loaded metadata.
+	return r.metadata, fetchErr
 }
